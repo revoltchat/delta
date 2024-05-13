@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use revolt_config::config;
-use revolt_models::v0::{self, MessageAuthor};
+use revolt_models::v0::{self, MessageAuthor, VoiceInformation};
 use revolt_permissions::OverrideField;
 use revolt_result::Result;
 use serde::{Deserialize, Serialize};
@@ -103,6 +103,10 @@ auto_derived!(
             /// Whether this channel is marked as not safe for work
             #[serde(skip_serializing_if = "crate::if_false", default)]
             nsfw: bool,
+
+            /// Voice Information for when this channel is also a voice channel
+            #[serde(skip_serializing_if = "Option::is_none")]
+            voice: Option<VoiceInformation>
         },
         /// Voice channel belonging to a server
         VoiceChannel {
@@ -219,6 +223,7 @@ impl Channel {
                 default_permissions: None,
                 role_permissions: HashMap::new(),
                 nsfw: data.nsfw.unwrap_or(false),
+                voice: data.voice
             },
             v0::LegacyServerChannelType::Voice => Channel::VoiceChannel {
                 id: id.clone(),
@@ -422,6 +427,23 @@ impl Channel {
             | Channel::SavedMessages { id, .. }
             | Channel::TextChannel { id, .. }
             | Channel::VoiceChannel { id, .. } => id.clone(),
+        }
+    }
+
+    /// Clone this channel's server id
+    pub fn server(&self) -> Option<String> {
+        match self {
+            Channel::TextChannel { server, .. } | Channel::VoiceChannel { server, .. } => Some(server.clone()),
+            _ => None
+        }
+    }
+
+    /// Gets this channel's voice information
+    pub fn voice(&self) -> Option<Cow<VoiceInformation>> {
+        match self {
+            Self::DirectMessage { .. } | Channel::VoiceChannel { .. } => Some(Cow::Owned(v0::VoiceInformation::default())),
+            Self::TextChannel { voice: Some(voice), .. } => Some(Cow::Borrowed(voice)),
+            _ => None
         }
     }
 

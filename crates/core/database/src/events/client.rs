@@ -2,10 +2,7 @@ use authifier::AuthifierEvent;
 use serde::{Deserialize, Serialize};
 
 use revolt_models::v0::{
-    AppendMessage, Channel, Emoji, FieldsChannel, FieldsMember, FieldsRole, FieldsServer,
-    FieldsUser, FieldsWebhook, Member, MemberCompositeKey, Message, PartialChannel, PartialMember,
-    PartialMessage, PartialRole, PartialServer, PartialUser, PartialWebhook, Report, Server, User,
-    UserSettings, Webhook,
+    AppendMessage, Channel, ChannelVoiceState, Emoji, FieldsChannel, FieldsMember, FieldsRole, FieldsServer, FieldsUser, FieldsWebhook, Member, MemberCompositeKey, Message, PartialChannel, PartialMember, PartialMessage, PartialRole, PartialServer, PartialUser, PartialUserVoiceState, PartialWebhook, Report, Server, User, UserSettings, UserVoiceState, Webhook
 };
 use revolt_result::Error;
 
@@ -55,6 +52,7 @@ pub enum EventV1 {
         channels: Vec<Channel>,
         members: Vec<Member>,
         emojis: Vec<Emoji>,
+        voice_states: Vec<ChannelVoiceState>
     },
 
     /// Ping response
@@ -225,6 +223,21 @@ pub enum EventV1 {
 
     /// Auth events
     Auth(AuthifierEvent),
+
+    /// Voice events
+    VoiceChannelJoin {
+        id: String,
+        state: UserVoiceState,
+    },
+    VoiceChannelLeave {
+        id: String,
+        user: String,
+    },
+    UserVoiceStateUpdate {
+        id: String,
+        channel_id: String,
+        data: PartialUserVoiceState
+    }
 }
 
 impl EventV1 {

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/delta", "crates/bonfire", "crates/core/*"]
+members = ["crates/delta", "crates/bonfire", "crates/voice-ingress", "crates/core/*"]
 
 [patch.crates-io]
 # mobc-redis = { git = "https://github.com/insertish/mobc", rev = "8b880bb59f2ba80b4c7bc40c649c113d8857a186" }
@@ -8,3 +8,4 @@ redis22 = { package = "redis", version = "0.22.3", git = "https://github.com/rev
 redis23 = { package = "redis", version = "0.23.1", git = "https://github.com/revoltchat/redis-rs", rev = "f8ca28ab85da59d2ccde526b4d2fb390eff5a5f9" }
 # authifier = { package = "authifier", version = "1.0.8", path = "../authifier/crates/authifier" }
 # rocket_authifier = { package = "rocket_authifier", version = "1.0.8", path = "../authifier/crates/rocket_authifier" }
+rocket = { git = "https://github.com/rwf2/Rocket/", rev = "4dcd928" }

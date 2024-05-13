@@ -10,7 +10,7 @@ use crate::{
 
 database_derived!(
     /// Reference implementation
-    #[derive(Default)]
+    #[derive(Default, Debug)]
     pub struct ReferenceDb {
         pub bots: Arc<Mutex<HashMap<String, Bot>>>,
         pub channels: Arc<Mutex<HashMap<String, Channel>>>,

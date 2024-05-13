@@ -1,3 +1,5 @@
+use std::panic::Location;
+
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde;
@@ -130,8 +132,11 @@ pub enum ErrorType {
         error: String,
     },
 
-    // ? Legacy errors
-    VosoUnavailable,
+    // ? Voice errors
+    LiveKitUnavailable,
+    AlreadyInVoiceChannel,
+    NotAVoiceChannel,
+    AlreadyConnected
 }
 
 #[macro_export]
@@ -169,6 +174,37 @@ macro_rules! query {
         $self.$type($collection, $($rest),+).await
             .map_err(|_| create_database_error!(stringify!($type), $collection))
     };
+}
+
+pub trait ToRevoltError<T> {
+    #[track_caller]
+    fn to_internal_error(self) -> Result<T, Error>;
+}
+
+impl<T, E> ToRevoltError<T> for Result<T, E> {
+    fn to_internal_error(self) -> Result<T, Error> {
+        self.map_err(|_| {
+            let loc = Location::caller();
+
+            Error {
+                error_type: ErrorType::InternalError,
+                location: format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
+            }
+        })
+    }
+}
+
+impl<T> ToRevoltError<T> for Option<T> {
+    fn to_internal_error(self) -> Result<T, Error> {
+        self.ok_or_else(|| {
+            let loc = Location::caller();
+
+            Error {
+                error_type: ErrorType::InternalError,
+                location: format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
+            }
+        })
+    }
 }
 
 #[cfg(test)]

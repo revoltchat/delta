@@ -7,3 +7,5 @@ target
 
 .vercel
 .DS_Store
+
+livekit.yml

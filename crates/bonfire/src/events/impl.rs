@@ -8,6 +8,8 @@ use revolt_models::v0;
 use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
 use revolt_presence::filter_online;
 use revolt_result::Result;
+use revolt_voice::{delete_voice_state, get_voice_channel_members, get_voice_state};
+
 
 use super::state::{Cache, State};
 
@@ -197,12 +199,22 @@ impl State {
             self.insert_subscription(channel.id().to_string());
         }
 
+        // fetch voice states for all the channels we can see
+        let mut voice_states = Vec::new();
+
+        for channel in &channels {
+            if let Ok(Some(voice_state)) = self.fetch_voice_state(channel).await {
+                voice_states.push(voice_state)
+            }
+        }
+
         Ok(EventV1::Ready {
             users,
             servers: servers.into_iter().map(Into::into).collect(),
             channels: channels.into_iter().map(Into::into).collect(),
             members: members.into_iter().map(Into::into).collect(),
             emojis: emojis.into_iter().map(Into::into).collect(),
+            voice_states,
         })
     }
 
@@ -548,5 +560,33 @@ impl State {
         }
 
         true
+    }
+
+    async fn fetch_voice_state(
+        &self,
+        channel: &Channel,
+    ) -> Result<Option<v0::ChannelVoiceState>> {
+        let members = get_voice_channel_members(&channel.id()).await?;
+
+        if !members.is_empty() {
+            let mut participants = Vec::with_capacity(members.len());
+
+            for user_id in members {
+                if let Some(voice_state) = get_voice_state(&channel.id(), channel.server().as_deref(), &user_id).await? {
+                    participants.push(voice_state);
+                } else {
+                    log::info!("Voice state not found but member in voice channel members, removing.");
+
+                    delete_voice_state(&channel.id(), channel.server().as_deref(),  &user_id).await?;
+                }
+            }
+
+            Ok(Some(v0::ChannelVoiceState {
+                id: channel.id(),
+                participants,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }

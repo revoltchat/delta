@@ -1,0 +1,33 @@
+[package]
+name = "revolt-voice"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# voice
+livekit-api = "0.3.2"
+livekit-protocol = "0.3.2"
+
+# core
+revolt-result = { path = "../result" }
+revolt-models = { path = "../models" }
+revolt-config = { path = "../config" }
+revolt-database = { path = "../database" }
+revolt-permissions = { version = "0.7.1", path = "../permissions" }
+
+# async
+futures = "0.3.21"
+async-std = { version = "1.8.0", features = [
+    "tokio1",
+    "tokio02",
+    "attributes",
+] }
+
+# util
+redis-kiss = "0.1.4"
+
+# serde
+serde_json = "1.0.79"
+serde = "1.0.136"

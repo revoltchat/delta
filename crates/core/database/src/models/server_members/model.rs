@@ -3,8 +3,8 @@ use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
 use revolt_result::{create_error, Result};
 
 use crate::{
-    events::client::EventV1, util::permissions::DatabasePermissionQuery, Channel, Database, File,
-    Server, SystemMessage, User,
+    events::client::EventV1, if_false, util::permissions::DatabasePermissionQuery, Channel,
+    Database, File, Server, SystemMessage, User,
 };
 
 auto_derived_partial!(
@@ -30,6 +30,13 @@ auto_derived_partial!(
         /// Timestamp this member is timed out until
         #[serde(skip_serializing_if = "Option::is_none")]
         pub timeout: Option<Timestamp>,
+
+        /// Whether the member is server-wide voice muted
+        #[serde(skip_serializing_if = "if_false")]
+        pub can_publish: bool,
+        /// Whether the member is server-wide voice deafened
+        #[serde(skip_serializing_if = "if_false")]
+        pub can_receive: bool,
     },
     "PartialMember"
 );
@@ -69,6 +76,8 @@ impl Default for Member {
             avatar: None,
             roles: vec![],
             timeout: None,
+            can_publish: false,
+            can_receive: false,
         }
     }
 }

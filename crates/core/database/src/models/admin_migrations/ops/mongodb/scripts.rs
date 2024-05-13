@@ -19,7 +19,7 @@ struct MigrationInfo {
     revision: i32,
 }
 
-pub const LATEST_REVISION: i32 = 26;
+pub const LATEST_REVISION: i32 = 27;
 
 pub async fn migrate_database(db: &MongoDb) {
     let migrations = db.col::<Document>("migrations");
@@ -981,6 +981,24 @@ pub async fn run_migrations(db: &MongoDb, revision: i32) -> i32 {
             )
             .await
             .expect("Failed to create ratelimit_events index.");
+    }
+
+    if revision <= 26 {
+        info!("Running migration [revision 26 / 17-04-2024]: Add `can_publish` and `can_receive` to members");
+
+        db.col::<Document>("server_members")
+            .update_many(
+                doc! {},
+                doc! {
+                    "$set": {
+                        "can_publish": true,
+                        "can_receive": true
+                    }
+                },
+                None
+            )
+            .await
+            .expect("Failed to update members");
     }
 
     // Need to migrate fields on attachments, change `user_id`, `object_id`, etc to `parent`.

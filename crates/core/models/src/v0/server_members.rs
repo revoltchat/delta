@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::{File, Role, User};
+use crate::if_false;
 
 use iso8601_timestamp::Timestamp;
 use once_cell::sync::Lazy;
@@ -57,6 +58,13 @@ auto_derived_partial!(
         /// Timestamp this member is timed out until
         #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
         pub timeout: Option<Timestamp>,
+
+        /// Whether the member is server-wide voice muted
+        #[serde(skip_serializing_if = "if_false")]
+        pub can_publish: bool,
+        /// Whether the member is server-wide voice deafened
+        #[serde(skip_serializing_if = "if_false")]
+        pub can_receive: bool,
     },
     "PartialMember"
 );
@@ -123,8 +131,15 @@ auto_derived!(
         pub roles: Option<Vec<String>>,
         /// Timestamp this member is timed out until
         pub timeout: Option<Timestamp>,
+        /// server-wide voice muted
+        pub can_publish: Option<bool>,
+        /// server-wide voice deafened
+        pub can_receive: Option<bool>,
+        /// voice channel to move to if already in a voice channel
+        pub voice_channel: Option<String>,
         /// Fields to remove from channel object
         #[cfg_attr(feature = "validator", validate(length(min = 1)))]
         pub remove: Option<Vec<FieldsMember>>,
+
     }
 );

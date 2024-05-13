@@ -44,8 +44,7 @@ pub struct Hosts {
     pub events: String,
     pub autumn: String,
     pub january: String,
-    pub voso_legacy: String,
-    pub voso_legacy_ws: String,
+    pub livekit: String
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -95,6 +94,13 @@ pub struct ApiWorkers {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct ApiLiveKit {
+    pub url: String,
+    pub key: String,
+    pub secret: String
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Api {
     pub registration: ApiRegistration,
     pub smtp: ApiSmtp,
@@ -102,6 +108,7 @@ pub struct Api {
     pub fcm: ApiFcm,
     pub security: ApiSecurity,
     pub workers: ApiWorkers,
+    pub livekit: ApiLiveKit,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -144,6 +151,7 @@ pub struct Features {
 pub struct Sentry {
     pub api: String,
     pub events: String,
+    pub voice_ingress: String
 }
 
 #[derive(Deserialize, Debug, Clone)]

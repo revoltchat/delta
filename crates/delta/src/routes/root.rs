@@ -27,9 +27,7 @@ pub struct VoiceFeature {
     /// Whether voice is enabled
     pub enabled: bool,
     /// URL pointing to the voice API
-    pub url: String,
-    /// URL pointing to the voice WebSocket server
-    pub ws: String,
+    pub url: String
 }
 
 /// # Feature Configuration
@@ -46,7 +44,7 @@ pub struct RevoltFeatures {
     /// Proxy service configuration
     pub january: Feature,
     /// Voice server configuration
-    pub voso: VoiceFeature,
+    pub livekit: VoiceFeature,
 }
 
 /// # Build Information
@@ -106,10 +104,9 @@ pub async fn root() -> Result<Json<RevoltConfig>> {
                 enabled: !config.hosts.january.is_empty(),
                 url: config.hosts.january,
             },
-            voso: VoiceFeature {
-                enabled: !config.hosts.voso_legacy.is_empty(),
-                url: config.hosts.voso_legacy,
-                ws: config.hosts.voso_legacy_ws,
+            livekit: VoiceFeature {
+                enabled: !config.api.livekit.url.is_empty(),
+                url: config.api.livekit.url.to_string(),
             },
         },
         ws: config.hosts.events,

@@ -71,10 +71,14 @@ impl<'r> Responder<'r, 'static> for Error {
             ErrorType::InvalidProperty => Status::BadRequest,
             ErrorType::InvalidSession => Status::Unauthorized,
             ErrorType::DuplicateNonce => Status::Conflict,
-            ErrorType::VosoUnavailable => Status::BadRequest,
             ErrorType::NotFound => Status::NotFound,
             ErrorType::NoEffect => Status::Ok,
             ErrorType::FailedValidation { .. } => Status::BadRequest,
+
+            ErrorType::LiveKitUnavailable => Status::BadRequest,
+            ErrorType::AlreadyInVoiceChannel => Status::BadRequest,
+            ErrorType::NotAVoiceChannel => Status::BadRequest,
+            ErrorType::AlreadyConnected => Status::BadRequest
         };
 
         // Serialize the error data structure into JSON.

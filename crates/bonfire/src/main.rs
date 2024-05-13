@@ -1,7 +1,9 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use async_std::net::TcpListener;
 use revolt_presence::clear_region;
+use once_cell::sync::OnceCell;
+use revolt_voice::VoiceClient;
 
 #[macro_use]
 extern crate log;
@@ -12,6 +14,15 @@ pub mod events;
 mod database;
 mod websocket;
 
+pub static VOICE_CLIENT: OnceCell<Arc<VoiceClient>> = OnceCell::new();
+
+pub fn get_voice_client() -> Arc<VoiceClient> {
+    VOICE_CLIENT
+        .get()
+        .expect("get_voice_client called before set")
+        .clone()
+}
+
 #[async_std::main]
 async fn main() {
     // Configure requirements for Bonfire.
@@ -20,6 +31,8 @@ async fn main() {
 
     // Clean up the current region information.
     clear_region(None).await;
+
+    VOICE_CLIENT.set(Arc::new(VoiceClient::from_revolt_config().await)).unwrap();
 
     // Setup a TCP listener to accept WebSocket connections on.
     // By default, we bind to port 9000 on all interfaces.

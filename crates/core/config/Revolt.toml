@@ -69,3 +69,4 @@ emoji_size = 500000
 [sentry]
 api = ""
 events = ""
+voice_ingress = ""

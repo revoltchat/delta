@@ -22,7 +22,7 @@ pub enum DatabaseInfo {
 }
 
 /// Database
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Database {
     /// Mock database
     Reference(ReferenceDb),
@@ -35,7 +35,7 @@ impl DatabaseInfo {
     #[async_recursion]
     pub async fn connect(self) -> Result<Database, String> {
         let config = config().await;
-
+        println!("{config:?}");
         Ok(match self {
             DatabaseInfo::Auto => {
                 if std::env::var("TEST_DB").is_ok() {
