@@ -616,6 +616,7 @@ impl From<crate::Member> for Member {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }
@@ -629,6 +630,7 @@ impl From<Member> for crate::Member {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }
@@ -642,6 +644,7 @@ impl From<crate::PartialMember> for PartialMember {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }
@@ -655,6 +658,7 @@ impl From<PartialMember> for crate::PartialMember {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }

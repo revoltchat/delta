@@ -17,6 +17,10 @@ auto_derived_partial!(
         /// Time at which this user joined the server
         pub joined_at: Timestamp,
 
+        /// Invite used by member to join server
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub used_invite: Option<String>,
+
         /// Member's nickname
         #[serde(skip_serializing_if = "Option::is_none")]
         pub nickname: Option<String>,
@@ -69,6 +73,7 @@ impl Default for Member {
             avatar: None,
             roles: vec![],
             timeout: None,
+            used_invite: None,
         }
     }
 }
@@ -81,6 +86,7 @@ impl Member {
         server: &Server,
         user: &User,
         channels: Option<Vec<Channel>>,
+        used_invite: Option<String>,
     ) -> Result<Vec<Channel>> {
         if db.fetch_ban(&server.id, &user.id).await.is_ok() {
             return Err(create_error!(Banned));
@@ -95,6 +101,7 @@ impl Member {
                 server: server.id.to_string(),
                 user: user.id.to_string(),
             },
+            used_invite,
             ..Default::default()
         };
 
