@@ -279,7 +279,9 @@ impl User {
         let username_lowercase = username.to_lowercase();
 
         // Block homoglyphs
-        if decancer::cure(&username_lowercase).into_str() != username_lowercase {
+        if decancer::cure!(&username_lowercase).map_err(|_| create_error!(InvalidUsername))?
+            != username_lowercase
+        {
             return Err(create_error!(InvalidUsername));
         }
 

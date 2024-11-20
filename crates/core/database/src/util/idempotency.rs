@@ -102,7 +102,7 @@ impl<'r> FromRequest<'r> for IdempotencyKey {
             .map(|k| k.to_string())
         {
             if key.len() > 64 {
-                return Outcome::Failure((
+                return Outcome::Error((
                     Status::BadRequest,
                     create_error!(FailedValidation {
                         error: "idempotency key too long".to_string(),
@@ -113,7 +113,7 @@ impl<'r> FromRequest<'r> for IdempotencyKey {
             let idempotency = IdempotencyKey { key };
             let mut cache = TOKEN_CACHE.lock().await;
             if cache.get(&idempotency.key).is_some() {
-                return Outcome::Failure((Status::Conflict, create_error!(DuplicateNonce)));
+                return Outcome::Error((Status::Conflict, create_error!(DuplicateNonce)));
             }
 
             cache.put(idempotency.key.clone(), ());

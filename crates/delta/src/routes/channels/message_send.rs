@@ -1,4 +1,5 @@
-use chrono::{Duration, Utc};
+use std::time::Duration;
+
 use revolt_database::util::permissions::DatabasePermissionQuery;
 use revolt_database::{
     util::idempotency::IdempotencyKey, util::reference::Reference, Database, User,
@@ -65,8 +66,12 @@ pub async fn message_send(
     // Disallow mentions for new users (TRUST-0: <12 hours age) in public servers
     let allow_mentions = if let Some(server) = query.server_ref() {
         if server.discoverable {
-            (Utc::now() - ulid::Ulid::from_string(&user.id).unwrap().datetime())
-                >= Duration::hours(12)
+            ulid::Ulid::from_string(&user.id)
+                .map_err(|_| create_error!(InvalidOperation))?
+                .datetime()
+                .elapsed()
+                .unwrap_or_else(|e| e.duration())
+                >= Duration::from_secs(12 * 60 * 60)
         } else {
             true
         }

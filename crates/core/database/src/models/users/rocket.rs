@@ -38,7 +38,7 @@ impl<'r> FromRequest<'r> for User {
         if let Some(user) = user {
             Outcome::Success(user.clone())
         } else {
-            Outcome::Failure((Status::Unauthorized, authifier::Error::InvalidSession))
+            Outcome::Error((Status::Unauthorized, authifier::Error::InvalidSession))
         }
     }
 }

@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    num::NonZero,
     sync::Arc,
     time::Duration,
 };
@@ -57,7 +58,7 @@ impl Default for Cache {
             members: Default::default(),
             servers: Default::default(),
 
-            seen_events: LruCache::new(20),
+            seen_events: LruCache::new(NonZero::new(20).unwrap()),
         }
     }
 }

@@ -17,8 +17,10 @@ base64 = "0.22.1"
 aes-gcm = "0.10.3"
 typenum = "1.17.0"
 
-aws-config = "1.5.5"
-aws-sdk-s3 = { version = "1.46.0", features = ["behavior-version-latest"] }
+# Can't update past these versions of aws-config and aws-sdk-s3 due to issue with rustc >1.78
+# https://github.com/revoltchat/backend/issues/341
+aws-config = "=1.5.5"
+aws-sdk-s3 = { version = "=1.46.0", features = ["behavior-version-latest"] }
 
 revolt-config = { version = "0.7.19", path = "../config", features = [
     "report-macros",
@@ -26,7 +28,7 @@ revolt-config = { version = "0.7.19", path = "../config", features = [
 revolt-result = { version = "0.7.19", path = "../result" }
 
 # image processing
-jxl-oxide = "0.8.1"
+jxl-oxide = "0.10"
 image = { version = "0.25.2" }
 
 # svg rendering

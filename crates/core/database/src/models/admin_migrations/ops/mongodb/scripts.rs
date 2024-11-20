@@ -652,7 +652,7 @@ pub async fn run_migrations(db: &MongoDb, revision: i32) -> i32 {
                 doc! {},
                 doc! {
                     "$set": {
-                        "joined_at": DateTime::now().to_rfc3339_string()
+                        "joined_at": DateTime::now().try_to_rfc3339_string().unwrap()
                     }
                 },
                 None,

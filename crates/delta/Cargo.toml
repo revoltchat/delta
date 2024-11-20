@@ -13,57 +13,54 @@ rand = "0.8.5"
 redis-kiss = "0.1.4"
 
 # Utility
-lru = "0.7.0"
+lru = "0.12"
 url = "2.2.2"
 log = "0.4.11"
-dotenv = "0.15.0"
-dashmap = "5.2.0"
-linkify = "0.6.0"
+dotenvy = "0.15"
+dashmap = "6"
+linkify = "0.10"
 once_cell = "1.17.1"
-env_logger = "0.7.1"
+env_logger = "0.11"
 
 # Lang. Utilities
 regex = "1"
-num_enum = "0.5.1"
+num_enum = "0.7"
 impl_ops = "0.1.1"
-bitfield = "0.13.2"
+bitfield = "0.17"
 
 # ID / key generation
-ulid = "0.4.1"
+ulid = "1"
 nanoid = "0.4.0"
 
 # serde
 serde_json = "1.0.57"
 serde = { version = "1.0.115", features = ["derive"] }
 validator = { version = "0.16", features = ["derive"] }
-iso8601-timestamp = { version = "0.2.11", features = [] }
+iso8601-timestamp = { version = "0.3", features = [] }
 
 # async
 futures = "0.3.8"
 chrono = "0.4.15"
-async-channel = "1.6.1"
-reqwest = { version = "0.11.4", features = ["json"] }
+async-channel = "2.3.1"
+reqwest = { version = "0.12", features = ["json"] }
 async-std = { version = "1.8.0", features = [
     "tokio1",
     "tokio02",
     "attributes",
 ] }
 
-# internal util
-lettre = "0.10.0-alpha.4"
+lettre = "0.11"
 
 # web
-rocket = { version = "0.5.0-rc.2", default-features = false, features = [
-    "json",
-] }
-rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", rev = "c17e8145baa4790319fdb6a473e465b960f55e7c" }
+rocket = { version = "0.5.1", default-features = false, features = ["json"] }
+rocket_cors = "0.6"
 rocket_empty = { version = "0.1.1", features = ["schema"] }
 rocket_authifier = { version = "1.0.8" }
 rocket_prometheus = "0.10.0-rc.3"
 
 # spec generation
 schemars = "0.8.8"
-revolt_rocket_okapi = { version = "0.9.1", features = ["swagger"] }
+revolt_rocket_okapi = { version = "0.10", features = ["swagger"] }
 
 # core
 authifier = "1.0.8"
@@ -82,4 +79,5 @@ revolt-result = { path = "../core/result", features = ["rocket", "okapi"] }
 revolt-permissions = { path = "../core/permissions", features = ["schemas"] }
 
 [build-dependencies]
-vergen = "7.5.0"
+vergen = "9"
+# internal util

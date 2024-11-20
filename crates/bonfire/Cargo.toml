@@ -9,9 +9,9 @@ edition = "2021"
 [dependencies]
 # util
 log = "*"
-sentry = "0.31.5"
-lru = "0.7.6"
-ulid = "0.5.0"
+sentry = "0.34"
+lru = "0.12"
+ulid = "1"
 once_cell = "1.9.0"
 redis-kiss = "0.1.4"
 lru_time_cache = "0.11.11"
@@ -28,7 +28,7 @@ serde = "1.0.136"
 
 # async
 futures = "0.3.21"
-async-tungstenite = { version = "0.17.0", features = ["async-std-runtime"] }
+async-tungstenite = { version = "0.28", features = ["async-std-runtime"] }
 async-std = { version = "1.8.0", features = [
     "tokio1",
     "tokio02",
@@ -45,4 +45,4 @@ revolt-permissions = { version = "0.7.19", path = "../core/permissions" }
 revolt-presence = { path = "../core/presence", features = ["redis-is-patched"] }
 
 # redis
-fred = { version = "8.0.1", features = ["subscriber-client"] }
+fred = { version = "9", features = ["subscriber-client"] }

@@ -39,16 +39,16 @@ revolt-permissions = { version = "0.7.19", path = "../permissions", features = [
 
 # Utility
 log = "0.4"
-lru = "0.11.0"
+lru = "0.12"
 rand = "0.8.5"
 ulid = "1.0.0"
 nanoid = "0.4.0"
-base64 = "0.21.3"
+base64 = "0.22.1"
 once_cell = "1.17"
 indexmap = "1.9.1"
-decancer = "1.6.2"
+decancer = "3"
 deadqueue = "0.2.4"
-linkify = { optional = true, version = "0.8.1" }
+linkify = { optional = true, version = "0.10" }
 url-escape = { optional = true, version = "0.1.1" }
 validator = { version = "0.16", features = ["derive"] }
 isahc = { optional = true, version = "1.7", features = ["json"] }
@@ -57,7 +57,7 @@ isahc = { optional = true, version = "1.7", features = ["json"] }
 serde_json = "1"
 revolt_optional_struct = "0.2.0"
 serde = { version = "1", features = ["derive"] }
-iso8601-timestamp = { version = "0.2.10", features = ["serde", "bson"] }
+iso8601-timestamp = { version = "0.3", features = ["serde", "bson"] }
 
 # Events
 redis-kiss = { version = "0.1.4" }
@@ -72,7 +72,7 @@ regex = "1"
 
 # Async Language Features
 futures = "0.3.19"
-async-lock = "2.8.0"
+async-lock = "3"
 async-trait = "0.1.51"
 async-recursion = "1.0.4"
 
@@ -84,11 +84,11 @@ axum = { version = "0.7.5", optional = true }
 
 # Rocket Impl
 schemars = { version = "0.8.8", optional = true }
-rocket = { version = "0.5.0-rc.2", default-features = false, features = [
+rocket = { version = "0.5.1", default-features = false, features = [
     "json",
 ], optional = true }
 revolt_okapi = { version = "0.9.1", optional = true }
-revolt_rocket_okapi = { version = "0.9.1", optional = true }
+revolt_rocket_okapi = { version = "0.10", optional = true }
 
 # Notifications
 fcm_v1 = "0.3.0"

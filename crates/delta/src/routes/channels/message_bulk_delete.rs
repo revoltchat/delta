@@ -1,4 +1,3 @@
-use chrono::Utc;
 use revolt_database::{
     util::{permissions::DatabasePermissionQuery, reference::Reference},
     Database, Message, User,
@@ -8,7 +7,6 @@ use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
 use revolt_result::{create_error, Result};
 use rocket::{serde::json::Json, State};
 use rocket_empty::EmptyResponse;
-use serde::Deserialize;
 use validator::Validate;
 
 /// # Bulk Delete Messages
@@ -37,10 +35,10 @@ pub async fn bulk_delete_messages(
         if ulid::Ulid::from_string(id)
             .map_err(|_| create_error!(InvalidOperation))?
             .datetime()
-            .signed_duration_since(Utc::now())
-            .num_days()
-            .abs()
-            > 7
+            .elapsed()
+            .unwrap_or_else(|e| e.duration())
+            .as_secs()
+            > 7 * 24 * 60 * 60
         {
             return Err(create_error!(InvalidOperation));
         }

@@ -19,7 +19,7 @@ pub struct TestHarness {
 
 impl TestHarness {
     pub async fn new() -> TestHarness {
-        dotenv::dotenv().ok();
+        dotenvy::dotenv().ok();
 
         let client = Client::tracked(crate::web().await)
             .await
@@ -101,6 +101,9 @@ impl TestHarness {
 
         let mut stream = self.sub.on_message();
         while let Some(item) = stream.next().await {
+            // Not sure what should be done if we get a RedisError
+            let item = item.unwrap();
+
             let msg_topic = item.get_channel_name();
             let payload: EventV1 = redis_kiss::decode_payload(&item).unwrap();
 

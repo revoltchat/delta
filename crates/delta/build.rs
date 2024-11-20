@@ -1,4 +1,4 @@
-use vergen::{vergen, Config};
+use vergen::Emitter;
 
 use std::process::Command;
 
@@ -12,5 +12,5 @@ fn main() {
         }
     }
 
-    vergen(Config::default()).ok();
+    let _ = Emitter::default().emit();
 }

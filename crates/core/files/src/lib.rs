@@ -172,28 +172,28 @@ pub fn decode_image<R: Read + BufRead + Seek>(reader: &mut R, mime: &str) -> Res
             let jxl_image = report_internal_error!(jxl_oxide::JxlImage::builder().read(reader))?;
             if let Ok(frame) = jxl_image.render_frame(0) {
                 match frame.color_channels().len() {
-                    3 => Ok(DynamicImage::ImageRgb8(
-                        DynamicImage::ImageRgb32F(
-                            ImageBuffer::from_vec(
-                                jxl_image.width(),
-                                jxl_image.height(),
-                                frame.image().buf().to_vec(),
+                    3 => {
+                        let mut buf: Vec<f32> = Vec::new();
+                        frame.stream().write_to_buffer(&mut buf);
+                        Ok(DynamicImage::ImageRgb8(
+                            DynamicImage::ImageRgb32F(
+                                ImageBuffer::from_vec(jxl_image.width(), jxl_image.height(), buf)
+                                    .ok_or_else(|| create_error!(ImageProcessingFailed))?,
                             )
-                            .ok_or_else(|| create_error!(ImageProcessingFailed))?,
-                        )
-                        .to_rgb8(),
-                    )),
-                    4 => Ok(DynamicImage::ImageRgba8(
-                        DynamicImage::ImageRgba32F(
-                            ImageBuffer::from_vec(
-                                jxl_image.width(),
-                                jxl_image.height(),
-                                frame.image().buf().to_vec(),
+                            .to_rgb8(),
+                        ))
+                    }
+                    4 => {
+                        let mut buf: Vec<f32> = Vec::new();
+                        frame.stream().write_to_buffer(&mut buf);
+                        Ok(DynamicImage::ImageRgba8(
+                            DynamicImage::ImageRgba32F(
+                                ImageBuffer::from_vec(jxl_image.width(), jxl_image.height(), buf)
+                                    .ok_or_else(|| create_error!(ImageProcessingFailed))?,
                             )
-                            .ok_or_else(|| create_error!(ImageProcessingFailed))?,
-                        )
-                        .to_rgba8(),
-                    )),
+                            .to_rgba8(),
+                        ))
+                    }
                     _ => Err(create_error!(ImageProcessingFailed)),
                 }
             } else {
