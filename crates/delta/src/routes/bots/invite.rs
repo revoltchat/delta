@@ -42,7 +42,7 @@ pub async fn invite_bot(
                 .await
                 .throw_if_lacking_channel_permission(ChannelPermission::ManageServer)?;
 
-            Member::create(db, &server, &bot_user, None)
+            Member::create(db, &server, &bot_user, None, None)
                 .await
                 .map(|_| EmptyResponse)
         }

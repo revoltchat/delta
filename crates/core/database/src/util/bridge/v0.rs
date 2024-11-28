@@ -1,5 +1,7 @@
 use revolt_models::v0::*;
-use revolt_permissions::{calculate_user_permissions, UserPermission};
+use revolt_permissions::{
+    calculate_user_permissions, ChannelPermission, PermissionValue, UserPermission,
+};
 
 use crate::{util::permissions::DatabasePermissionQuery, Database, FileUsedFor};
 
@@ -617,16 +619,28 @@ impl From<crate::ServerBan> for ServerBan {
     }
 }
 
-impl From<crate::Member> for Member {
-    fn from(value: crate::Member) -> Self {
-        Member {
-            id: value.id.into(),
-            joined_at: value.joined_at,
-            nickname: value.nickname,
-            avatar: value.avatar.map(|f| f.into()),
-            roles: value.roles,
-            timeout: value.timeout,
+impl crate::Member {
+    pub fn into(self, perspective_permissions: Option<PermissionValue>) -> Member {
+        let mut m = Member {
+            id: self.id.into(),
+            joined_at: self.joined_at,
+            nickname: self.nickname,
+            avatar: self.avatar.map(|f| f.into()),
+            roles: self.roles,
+            timeout: self.timeout,
+            used_invite: self.used_invite,
+        };
+
+        match perspective_permissions {
+            Some(permissions) => {
+                if !permissions.has_channel_permission(ChannelPermission::ViewInvitation) {
+                    m.used_invite = None;
+                }
+            }
+            None => {}
         }
+
+        m
     }
 }
 
@@ -639,20 +653,33 @@ impl From<Member> for crate::Member {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }
 
-impl From<crate::PartialMember> for PartialMember {
-    fn from(value: crate::PartialMember) -> Self {
-        PartialMember {
-            id: value.id.map(|id| id.into()),
-            joined_at: value.joined_at,
-            nickname: value.nickname,
-            avatar: value.avatar.map(|f| f.into()),
-            roles: value.roles,
-            timeout: value.timeout,
+impl crate::PartialMember {
+    pub fn into(self, perspective_permissions: Option<PermissionValue>) -> PartialMember {
+        let mut pm = PartialMember {
+            id: self.id.map(|id| id.into()),
+            joined_at: self.joined_at,
+            nickname: self.nickname,
+            avatar: self.avatar.map(|f| f.into()),
+            roles: self.roles,
+            timeout: self.timeout,
+            used_invite: self.used_invite,
+        };
+
+        match perspective_permissions {
+            Some(permissions) => {
+                if !permissions.has_channel_permission(ChannelPermission::ViewInvitation) {
+                    pm.used_invite = None;
+                }
+            }
+            None => {}
         }
+
+        pm
     }
 }
 
@@ -665,6 +692,7 @@ impl From<PartialMember> for crate::PartialMember {
             avatar: value.avatar.map(|f| f.into()),
             roles: value.roles,
             timeout: value.timeout,
+            used_invite: value.used_invite,
         }
     }
 }

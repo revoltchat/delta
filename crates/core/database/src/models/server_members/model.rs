@@ -1,5 +1,5 @@
 use iso8601_timestamp::Timestamp;
-use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
+use revolt_permissions::{calculate_channel_permissions, ChannelPermission, PermissionValue};
 use revolt_result::{create_error, Result};
 
 use crate::{
@@ -16,6 +16,10 @@ auto_derived_partial!(
 
         /// Time at which this user joined the server
         pub joined_at: Timestamp,
+
+        /// Invite used by member to join server
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub used_invite: Option<String>,
 
         /// Member's nickname
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -69,6 +73,7 @@ impl Default for Member {
             avatar: None,
             roles: vec![],
             timeout: None,
+            used_invite: None,
         }
     }
 }
@@ -81,6 +86,7 @@ impl Member {
         server: &Server,
         user: &User,
         channels: Option<Vec<Channel>>,
+        used_invite: Option<String>,
     ) -> Result<(Member, Vec<Channel>)> {
         if db.fetch_ban(&server.id, &user.id).await.is_ok() {
             return Err(create_error!(Banned));
@@ -95,6 +101,7 @@ impl Member {
                 server: server.id.to_string(),
                 user: user.id.to_string(),
             },
+            used_invite,
             ..Default::default()
         };
 
@@ -164,6 +171,7 @@ impl Member {
         db: &Database,
         partial: PartialMember,
         remove: Vec<FieldsMember>,
+        perspective_permissions: Option<PermissionValue>,
     ) -> Result<()> {
         for field in &remove {
             self.remove_field(field);
@@ -175,7 +183,7 @@ impl Member {
 
         EventV1::ServerMemberUpdate {
             id: self.id.clone().into(),
-            data: partial.into(),
+            data: partial.into(perspective_permissions),
             clear: remove.into_iter().map(|field| field.into()).collect(),
         }
         .p(self.id.server.clone())

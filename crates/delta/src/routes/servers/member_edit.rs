@@ -6,7 +6,7 @@ use revolt_database::{
 };
 use revolt_models::v0;
 
-use revolt_permissions::{calculate_server_permissions, ChannelPermission};
+use revolt_permissions::{calculate_server_permissions, ChannelPermission, PermissionValue};
 use revolt_result::{create_error, Result};
 use rocket::{serde::json::Json, State};
 use validator::Validate;
@@ -152,8 +152,9 @@ pub async fn edit(
             remove
                 .map(|v| v.into_iter().map(Into::into).collect())
                 .unwrap_or_default(),
+            Some(permissions),
         )
         .await?;
 
-    Ok(Json(member.into()))
+    Ok(Json(member.into(Some(permissions))))
 }

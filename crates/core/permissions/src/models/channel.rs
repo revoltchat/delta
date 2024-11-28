@@ -51,6 +51,8 @@ pub enum ChannelPermission {
     ChangeAvatar = 1 << 12,
     /// Remove other's avatars below their ranking
     RemoveAvatars = 1 << 13,
+    /// View member's invitation
+    ViewInvitation = 1 << 14,
 
     // % 7 bits reserved
 

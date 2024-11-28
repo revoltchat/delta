@@ -88,7 +88,7 @@ pub async fn message_send(
     let model_member: Option<v0::Member> = query
         .member_ref()
         .as_ref()
-        .map(|member| member.clone().into_owned().into());
+        .map(|member| member.clone().into_owned().into(Some(permissions)));
 
     Ok(Json(
         Message::create_from_api(

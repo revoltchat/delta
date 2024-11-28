@@ -7,11 +7,12 @@ use revolt_models::v0::{
     self, BulkMessageResponse, DataMessageSend, Embed, MessageAuthor, MessageFlags, MessageSort,
     MessageWebhook, PushNotification, ReplyIntent, SendableEmbed, Text, RE_MENTION,
 };
-use revolt_permissions::{ChannelPermission, PermissionValue};
+use revolt_permissions::{calculate_channel_permissions, ChannelPermission, PermissionValue};
 use revolt_result::Result;
 use ulid::Ulid;
 use validator::Validate;
 
+use crate::util::permissions::DatabasePermissionQuery;
 use crate::{
     events::client::EventV1,
     tasks::{self, ack::AckEvent},
@@ -592,6 +593,9 @@ impl Message {
             .map(|msg| msg.into_model(None, None))
             .collect();
 
+        let mut query = DatabasePermissionQuery::new(db, perspective);
+        let permissions = calculate_channel_permissions(&mut query).await;
+
         if let Some(true) = include_users {
             let user_ids = messages
                 .iter()
@@ -643,7 +647,7 @@ impl Message {
                         db.fetch_members(&server_id, &user_ids)
                             .await?
                             .into_iter()
-                            .map(Into::into)
+                            .map(|m| m.into(Some(permissions)))
                             .collect(),
                     )
                 } else {

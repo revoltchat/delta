@@ -8,7 +8,7 @@ pub use server::*;
 pub use user::*;
 
 /// Holds a permission value to manipulate.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct PermissionValue(u64);
 
 impl PermissionValue {

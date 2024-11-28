@@ -41,6 +41,10 @@ auto_derived_partial!(
         /// Time at which this user joined the server
         pub joined_at: Timestamp,
 
+        /// Invite used by member to join server
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub used_invite: Option<String>,
+
         /// Member's nickname
         #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
         pub nickname: Option<String>,

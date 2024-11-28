@@ -3,7 +3,7 @@ use revolt_database::{
     Database, User,
 };
 use revolt_models::v0;
-use revolt_permissions::PermissionQuery;
+use revolt_permissions::{calculate_channel_permissions, PermissionQuery};
 use revolt_result::{create_error, Result};
 use rocket::{serde::json::Json, State};
 
@@ -24,6 +24,7 @@ pub async fn fetch_all(
         return Err(create_error!(NotFound));
     }
 
+    let permissions = calculate_channel_permissions(&mut query).await;
     let mut members = db.fetch_all_members(&server.id).await?;
 
     let user_ids: Vec<String> = members
@@ -45,7 +46,10 @@ pub async fn fetch_all(
     }
 
     Ok(Json(v0::AllMemberResponse {
-        members: members.into_iter().map(Into::into).collect(),
+        members: members
+            .into_iter()
+            .map(|m| m.into(Some(permissions)))
+            .collect(),
         users,
     }))
 }

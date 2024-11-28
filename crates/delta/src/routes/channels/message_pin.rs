@@ -1,5 +1,6 @@
 use revolt_database::{
-    util::{permissions::DatabasePermissionQuery, reference::Reference}, Database, PartialMessage, SystemMessage, User
+    util::{permissions::DatabasePermissionQuery, reference::Reference},
+    Database, PartialMessage, SystemMessage, User,
 };
 use revolt_models::v0::MessageAuthor;
 use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
@@ -28,30 +29,37 @@ pub async fn message_pin(
     let mut message = msg.as_message_in_channel(db, channel.id()).await?;
 
     if message.pinned.unwrap_or_default() {
-        return Err(create_error!(AlreadyPinned))
+        return Err(create_error!(AlreadyPinned));
     }
 
-    message.update(db, PartialMessage {
-        pinned: Some(true),
-        ..Default::default()
-    }, vec![]).await?;
+    message
+        .update(
+            db,
+            PartialMessage {
+                pinned: Some(true),
+                ..Default::default()
+            },
+            vec![],
+        )
+        .await?;
 
     SystemMessage::MessagePinned {
         id: message.id.clone(),
-        by: user.id.clone()
+        by: user.id.clone(),
     }
     .into_message(channel.id().to_string())
     .send(
         db,
         MessageAuthor::System {
             username: &user.username,
-            avatar: user.avatar.as_ref().map(|file| file.id.as_ref())
+            avatar: user.avatar.as_ref().map(|file| file.id.as_ref()),
         },
         None,
         None,
         &channel,
-        false
-    ).await?;
+        false,
+    )
+    .await?;
 
     Ok(EmptyResponse)
 }
@@ -59,7 +67,11 @@ pub async fn message_pin(
 #[cfg(test)]
 mod test {
     use crate::{rocket, util::test::TestHarness};
-    use revolt_database::{events::client::EventV1, util::{idempotency::IdempotencyKey, reference::Reference}, Member, Message, Server};
+    use revolt_database::{
+        events::client::EventV1,
+        util::{idempotency::IdempotencyKey, reference::Reference},
+        Member, Message, Server,
+    };
     use revolt_models::v0::{self, SystemMessage};
     use rocket::http::{Header, Status};
 
@@ -75,39 +87,47 @@ mod test {
                 ..Default::default()
             },
             &user,
-            true
-        ).await.expect("Failed to create test server");
+            true,
+        )
+        .await
+        .expect("Failed to create test server");
 
-        let (member, channels) = Member::create(&harness.db, &server, &user, Some(channels)).await.expect("Failed to create member");
+        let (member, channels) = Member::create(&harness.db, &server, &user, Some(channels), None)
+            .await
+            .expect("Failed to create member");
         let channel = &channels[0];
 
         let message = Message::create_from_api(
             &harness.db,
             channel.clone(),
             v0::DataMessageSend {
-                content:Some("Test message".to_string()),
+                content: Some("Test message".to_string()),
                 nonce: None,
                 attachments: None,
                 replies: None,
                 embeds: None,
                 masquerade: None,
                 interactions: None,
-                flags: None
+                flags: None,
             },
             v0::MessageAuthor::User(&user.clone().into(&harness.db, Some(&user)).await),
             Some(user.clone().into(&harness.db, Some(&user)).await),
-            Some(member.into()),
+            Some(member.into(None)),
             user.limits().await,
             IdempotencyKey::unchecked_from_string("0".to_string()),
             false,
-            false
+            false,
         )
         .await
         .expect("Failed to create message");
 
         let response = harness
             .client
-            .post(format!("/channels/{}/messages/{}/pin", channel.id(), &message.id))
+            .post(format!(
+                "/channels/{}/messages/{}/pin",
+                channel.id(),
+                &message.id
+            ))
             .header(Header::new("x-session-token", session.token.to_string()))
             .dispatch()
             .await;
@@ -115,34 +135,37 @@ mod test {
         assert_eq!(response.status(), Status::NoContent);
         drop(response);
 
-        harness.wait_for_event(channel.id(), |event| {
-            match event {
-                EventV1::Message(message) => {
-                    match &message.system {
-                        Some(SystemMessage::MessagePinned { by, .. }) => {
-                            assert_eq!(by, &user.id);
+        harness
+            .wait_for_event(channel.id(), |event| match event {
+                EventV1::Message(message) => match &message.system {
+                    Some(SystemMessage::MessagePinned { by, .. }) => {
+                        assert_eq!(by, &user.id);
 
-                            true
-                        },
-                        _ => false
+                        true
                     }
+                    _ => false,
                 },
-                _ => false
-            }
-        }).await;
+                _ => false,
+            })
+            .await;
 
-        harness.wait_for_event(channel.id(), |event| {
-            match event {
-                EventV1::MessageUpdate { id, channel: channel_id, data, .. } => {
+        harness
+            .wait_for_event(channel.id(), |event| match event {
+                EventV1::MessageUpdate {
+                    id,
+                    channel: channel_id,
+                    data,
+                    ..
+                } => {
                     assert_eq!(id, &message.id);
                     assert_eq!(channel_id, channel.id());
                     assert_eq!(data.pinned, Some(true));
 
                     true
-                },
-                _ => false
-            }
-        }).await;
+                }
+                _ => false,
+            })
+            .await;
 
         let updated_message = Reference::from_unchecked(message.id)
             .as_message(&harness.db)

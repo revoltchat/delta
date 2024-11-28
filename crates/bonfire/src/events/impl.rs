@@ -99,6 +99,10 @@ impl State {
         let user = self.clone_user();
         self.cache.is_bot = user.bot.is_some();
 
+        // Load Channel permissions
+        let mut query = DatabasePermissionQuery::new(db, &user);
+        let permissions = calculate_channel_permissions(&mut query).await;
+
         // Find all relationships to the user.
         let mut user_ids: HashSet<String> = user
             .relations
@@ -245,7 +249,12 @@ impl State {
                 None
             },
             members: if fields.contains(&ReadyPayloadFields::Members) {
-                Some(members.into_iter().map(Into::into).collect())
+                Some(
+                    members
+                        .into_iter()
+                        .map(|m| m.into(Some(permissions)))
+                        .collect(),
+                )
             } else {
                 None
             },
