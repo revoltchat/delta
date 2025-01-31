@@ -228,7 +228,6 @@ impl AbstractMessages for MongoDb {
                     "_id": id
                 },
                 query,
-                None,
             )
             .await
             .map(|_| ())
@@ -247,7 +246,6 @@ impl AbstractMessages for MongoDb {
                         format!("reactions.{emoji}"): user
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -266,7 +264,6 @@ impl AbstractMessages for MongoDb {
                         format!("reactions.{emoji}"): user
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -285,7 +282,6 @@ impl AbstractMessages for MongoDb {
                         format!("reactions.{emoji}"): 1
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -300,15 +296,12 @@ impl AbstractMessages for MongoDb {
     /// Delete messages from a channel by their ids and corresponding channel id
     async fn delete_messages(&self, channel: &str, ids: &[String]) -> Result<()> {
         self.col::<Document>(COL)
-            .delete_many(
-                doc! {
-                    "channel": channel,
-                    "_id": {
-                        "$in": ids
-                    }
-                },
-                None,
-            )
+            .delete_many(doc! {
+                "channel": channel,
+                "_id": {
+                    "$in": ids
+                }
+            })
             .await
             .map(|_| ())
             .map_err(|_| create_database_error!("delete_many", COL))
@@ -362,7 +355,6 @@ impl MongoDb {
                             "deleted": true
                         }
                     },
-                    None,
                 )
                 .await
                 .map_err(|_| create_database_error!("update_many", "attachments"))?;
@@ -370,7 +362,7 @@ impl MongoDb {
 
         // And then delete said messages.
         self.col::<Document>(COL)
-            .delete_many(projection, None)
+            .delete_many(projection)
             .await
             .map(|_| ())
             .map_err(|_| create_database_error!("delete_many", COL))

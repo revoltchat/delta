@@ -18,6 +18,9 @@ use super::{Channel, Embed, File, Member, MessageWebhook, User, Webhook, RE_COLO
 pub static RE_MENTION: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"<@([0-9A-HJKMNP-TV-Z]{26})>").unwrap());
 
+pub static RE_ROLE_MENTION: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"<r@([0-9A-HJKMNP-TV-Z]{26})>|@online|@everyone").unwrap());
+
 auto_derived_partial!(
     /// Message
     pub struct Message {
@@ -58,6 +61,8 @@ auto_derived_partial!(
         /// Array of user ids mentioned in this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mentions: Option<Vec<String>>,
+        /// Array of role ids mentioned in this message
+        pub role_mentions: Option<Vec<String>>,
         /// Array of message ids this message is replying to
         #[serde(skip_serializing_if = "Option::is_none")]
         pub replies: Option<Vec<String>>,
@@ -367,6 +372,11 @@ auto_derived!(
     pub enum MessageFlags {
         /// Message will not send push / desktop notifications
         SuppressNotifications = 1,
+        /// Message will mention all users who can see the channel
+        MentionsEveryone = 2,
+        /// Message will mention all users who are online and can see the channel.
+        /// This cannot be true if MentionsEveryone is true
+        MentionsOnline = 3,
     }
 
     /// Optional fields on message

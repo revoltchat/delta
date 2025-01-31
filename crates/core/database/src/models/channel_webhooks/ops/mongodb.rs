@@ -24,12 +24,9 @@ impl AbstractWebhooks for MongoDb {
     async fn fetch_webhooks_for_channel(&self, channel_id: &str) -> Result<Vec<Webhook>> {
         Ok(self
             .col::<Webhook>(COL)
-            .find(
-                doc! {
-                    "channel_id": channel_id,
-                },
-                None,
-            )
+            .find(doc! {
+                "channel_id": channel_id,
+            })
             .await
             .map_err(|_| create_database_error!("find", COL))?
             .filter_map(|s| async {

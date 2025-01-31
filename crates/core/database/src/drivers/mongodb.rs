@@ -31,17 +31,17 @@ impl MongoDb {
     }
 
     /// Get a collection by its name
-    pub fn col<T>(&self, collection: &str) -> mongodb::Collection<T> {
+    pub fn col<T: Send + Sync>(&self, collection: &str) -> mongodb::Collection<T> {
         self.db().collection(collection)
     }
 
     /// Insert one document into a collection
-    pub async fn insert_one<T: Serialize>(
+    pub async fn insert_one<T: Serialize + Send + Sync>(
         &self,
         collection: &'static str,
         document: T,
     ) -> Result<InsertOneResult> {
-        self.col::<T>(collection).insert_one(document, None).await
+        self.col::<T>(collection).insert_one(document).await
     }
 
     /// Count documents by projection
@@ -51,7 +51,7 @@ impl MongoDb {
         projection: Document,
     ) -> Result<u64> {
         self.col::<Document>(collection)
-            .count_documents(projection, None)
+            .count_documents(projection)
             .await
     }
 
@@ -67,7 +67,8 @@ impl MongoDb {
     {
         Ok(self
             .col::<T>(collection)
-            .find(projection, options)
+            .find(projection)
+            .with_options(options)
             .await?
             .filter_map(|s| async {
                 if cfg!(debug_assertions) {
@@ -101,7 +102,8 @@ impl MongoDb {
         O: Into<Option<FindOneOptions>>,
     {
         self.col::<T>(collection)
-            .find_one(projection, options)
+            .find_one(projection)
+            .with_options(options)
             .await
     }
 
@@ -165,7 +167,7 @@ impl MongoDb {
         };
 
         self.col::<Document>(collection)
-            .update_one(projection, query, None)
+            .update_one(projection, query)
             .await
     }
 
@@ -200,7 +202,7 @@ impl MongoDb {
         projection: Document,
     ) -> Result<DeleteResult> {
         self.col::<Document>(collection)
-            .delete_one(projection, None)
+            .delete_one(projection)
             .await
     }
 

@@ -4,6 +4,7 @@ Revolt.*.toml
 target
 .data
 .env
+.venv/
 
 .vercel
 .DS_Store

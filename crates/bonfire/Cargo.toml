@@ -36,7 +36,7 @@ async-std = { version = "1.8.0", features = [
 ] }
 
 # core
-authifier = { version = "1.0.9" }
+authifier = { version = "1.0.10" }
 revolt-result = { path = "../core/result" }
 revolt-models = { path = "../core/models" }
 revolt-config = { path = "../core/config" }

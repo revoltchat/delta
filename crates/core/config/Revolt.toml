@@ -68,13 +68,19 @@ max_concurrent_connections = 50
 # Usually they have to be, so that messages sent from one or the other get sent to everyone
 production = true
 
+# Changes how many users are processed in each chunk when resolving role/everyone mentions.
+# Increasing this will resolve mentions faster, but will consume more memory while resolving.
+mass_mention_chunk_size = 200
+
 # none of these should need changing
 exchange = "revolt.notifications"
 message_queue = "notifications.origin.message"
-fr_accepted_queue = "notifications.ingest.fr_accepted" # friend request accepted
-fr_received_queue = "notifications.ingest.fr_received" # friend request received
-generic_queue = "notifications.ingest.generic"         # generic messages (title + body)
-ack_queue = "notifications.process.ack"                # updates badges for apple devices
+mass_mention_queue = "notifications.origin.mass_mention" # handles messages that contain role or everyone mentions
+fr_accepted_queue = "notifications.ingest.fr_accepted"   # friend request accepted
+fr_received_queue = "notifications.ingest.fr_received"   # friend request received
+generic_queue = "notifications.ingest.generic"           # generic messages (title + body)
+ack_queue = "notifications.process.ack"                  # updates badges for apple devices
+
 
 [pushd.vapid]
 queue = "notifications.outbound.vapid"
@@ -174,6 +180,11 @@ default_bucket = "revolt-uploads"
 # Bucket to upload to by default
 # Feature gate options
 webhooks_enabled = false
+# Enable push notifications for mass pings (everyone, online, roles)
+# When false this will still ping in-client but will not send notifications from pushd
+mass_mentions_send_notifications = true
+# Can role/everyone pings be used at all
+mass_mentions_enabled = true
 
 [features.limits]
 

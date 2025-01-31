@@ -25,14 +25,11 @@ impl AbstractServers for MongoDb {
     async fn fetch_servers<'a>(&self, ids: &'a [String]) -> Result<Vec<Server>> {
         Ok(self
             .col::<Server>(COL)
-            .find(
-                doc! {
-                    "_id": {
-                        "$in": ids
-                    }
-                },
-                None,
-            )
+            .find(doc! {
+                "_id": {
+                    "$in": ids
+                }
+            })
             .await
             .map_err(|_| create_database_error!("find", "servers"))?
             .filter_map(|s| async {
@@ -84,7 +81,6 @@ impl AbstractServers for MongoDb {
                             .map_err(|_| create_database_error!("to_document", "role"))?
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -125,7 +121,6 @@ impl AbstractServers for MongoDb {
                         "roles": &role_id
                     }
                 },
-                None,
             )
             .await
             .map_err(|_| create_database_error!("update_many", "server_members"))?;
@@ -140,7 +135,6 @@ impl AbstractServers for MongoDb {
                         "role_permissions.".to_owned() + role_id: 1_i32
                     }
                 },
-                None,
             )
             .await
             .map_err(|_| create_database_error!("update_one", "channels"))?;
@@ -155,7 +149,6 @@ impl AbstractServers for MongoDb {
                         "roles.".to_owned() + role_id: 1_i32
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -188,12 +181,9 @@ impl MongoDb {
         // Find all channels
         let channels: Vec<String> = self
             .col::<Document>("channels")
-            .find(
-                doc! {
-                    "server": server_id
-                },
-                None,
-            )
+            .find(doc! {
+                "server": server_id
+            })
             .await
             .map_err(|_| create_database_error!("find", "channels"))?
             .filter_map(|s| async {
@@ -225,19 +215,15 @@ impl MongoDb {
                         }
                     }
                 },
-                None,
             )
             .await
             .map_err(|_| create_database_error!("update_many", "emojis"))?;
 
         // Delete all channels.
         self.col::<Document>("channels")
-            .delete_many(
-                doc! {
-                    "server": &server_id
-                },
-                None,
-            )
+            .delete_many(doc! {
+                "server": &server_id
+            })
             .await
             .map_err(|_| create_database_error!("delete_many", "channels"))?;
 
@@ -248,12 +234,9 @@ impl MongoDb {
         // Delete members and bans.
         for with in &["server_members", "server_bans"] {
             self.col::<Document>(with)
-                .delete_many(
-                    doc! {
-                        "_id.server": &server_id
-                    },
-                    None,
-                )
+                .delete_many(doc! {
+                    "_id.server": &server_id
+                })
                 .await
                 .map_err(|_| create_database_error!("delete_many", with))?;
         }

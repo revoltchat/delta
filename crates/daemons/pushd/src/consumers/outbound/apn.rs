@@ -81,7 +81,7 @@ impl ApnsOutboundConsumer {
                 }
             }
 
-            println!("Got badge count for APN: {}", mention_count);
+            debug!("Got badge count for APN: {}", mention_count);
 
             return Some(mention_count);
         }
@@ -188,6 +188,10 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                     data: BTreeMap::new(),
                 };
 
+                debug!(
+                    "Sending friend request received for user: {:}",
+                    &payload.user_id
+                );
                 resp = self.client.send(apn_payload).await;
             }
 
@@ -230,6 +234,10 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                     data: BTreeMap::new(),
                 };
 
+                debug!(
+                    "Sending friend request accept for user: {:}",
+                    &payload.user_id
+                );
                 resp = self.client.send(apn_payload).await;
             }
             PayloadKind::Generic(alert) => {
@@ -259,6 +267,10 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                     data: BTreeMap::new(),
                 };
 
+                debug!(
+                    "Sending generic notification for user: {:}",
+                    &payload.user_id
+                );
                 resp = self.client.send(apn_payload).await;
             }
 
@@ -294,6 +306,10 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                     channel_name: alert.channel.name().unwrap_or(&title),
                 };
 
+                debug!(
+                    "Sending message notification for user: {:}",
+                    &payload.user_id
+                );
                 resp = self.client.send(apn_payload).await;
             }
             PayloadKind::BadgeUpdate(badge) => {
@@ -307,6 +323,7 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                     data: BTreeMap::new(),
                 };
 
+                debug!("Sending badge update for user: {:}", &payload.user_id);
                 resp = self.client.send(apn_payload).await;
             }
         }
@@ -321,6 +338,10 @@ impl AsyncConsumer for ApnsOutboundConsumer {
                         }),
                     ..
                 }) => {
+                    info!(
+                        "Removing APNS subscription id {:} (user: {:}) due to invalid token",
+                        &payload.session_id, &payload.user_id
+                    );
                     if let Err(err) = self
                         .db
                         .remove_push_subscription_by_session_id(&payload.session_id)

@@ -23,14 +23,11 @@ impl AbstractChannels for MongoDb {
     async fn fetch_channels<'a>(&self, ids: &'a [String]) -> Result<Vec<Channel>> {
         Ok(self
             .col::<Channel>(COL)
-            .find(
-                doc! {
-                    "_id": {
-                        "$in": ids
-                    }
-                },
-                None,
-            )
+            .find(doc! {
+                "_id": {
+                    "$in": ids
+                }
+            })
             .await
             .map_err(|_| create_database_error!("fetch", "channels"))?
             .filter_map(|s| async {
@@ -119,7 +116,6 @@ impl AbstractChannels for MongoDb {
                         "recipients": user
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -141,7 +137,6 @@ impl AbstractChannels for MongoDb {
                     "role_permissions.".to_owned() + role: permissions
                 }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -179,7 +174,6 @@ impl AbstractChannels for MongoDb {
                         "recipients": user
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -253,7 +247,6 @@ impl AbstractChannels for MongoDb {
                         "_id": server.id
                     },
                     update,
-                    None,
                 )
                 .await
                 .map_err(|_| create_database_error!("update_one", "servers"))?;
@@ -274,23 +267,17 @@ impl MongoDb {
     pub async fn delete_associated_channel_objects(&self, id: Bson) -> Result<()> {
         // Delete all invites to these channels.
         self.col::<Document>("channel_invites")
-            .delete_many(
-                doc! {
-                    "channel": &id
-                },
-                None,
-            )
+            .delete_many(doc! {
+                "channel": &id
+            })
             .await
             .map_err(|_| create_database_error!("delete_many", "channel_invites"))?;
 
         // Delete unread message objects on channels.
         self.col::<Document>("channel_unreads")
-            .delete_many(
-                doc! {
-                    "_id.channel": &id
-                },
-                None,
-            )
+            .delete_many(doc! {
+                "_id.channel": &id
+            })
             .await
             .map_err(|_| create_database_error!("delete_many", "channel_unreads"))
             .map(|_| ())?;
@@ -299,12 +286,9 @@ impl MongoDb {
 
         // Delete all webhooks on this channel.
         self.col::<Document>("webhooks")
-            .delete_many(
-                doc! {
-                    "channel": &id
-                },
-                None,
-            )
+            .delete_many(doc! {
+                "channel": &id
+            })
             .await
             .map_err(|_| create_database_error!("delete_many", "webhooks"))
             .map(|_| ())

@@ -71,8 +71,14 @@ impl AsyncConsumer for AckConsumer {
         #[allow(clippy::disallowed_methods)]
         let unreads = self.db.fetch_unread_mentions(&payload.user_id).await;
 
+        debug!("Processing unreads for {:}", &payload.user_id);
+
         if let Ok(u) = &unreads {
             if u.is_empty() {
+                debug!(
+                    "Discarding unread task (no mentions found) for {:}",
+                    &payload.user_id
+                );
                 return;
             }
         } else {
@@ -95,6 +101,10 @@ impl AsyncConsumer for AckConsumer {
                 .collect();
 
             if apple_sessions.is_empty() {
+                debug!(
+                    "Discarding unread task (no apn sessions found) for {:}",
+                    &payload.user_id
+                );
                 return;
             }
 

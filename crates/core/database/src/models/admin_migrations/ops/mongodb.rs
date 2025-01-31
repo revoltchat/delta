@@ -10,7 +10,7 @@ impl AbstractMigrations for MongoDb {
     #[cfg(test)]
     /// Drop the database
     async fn drop_database(&self) {
-        self.db().drop(None).await.ok();
+        self.db().drop().await.ok();
     }
 
     /// Migrate the database
@@ -18,7 +18,7 @@ impl AbstractMigrations for MongoDb {
         info!("Migrating the database.");
 
         let list = self
-            .list_database_names(None, None)
+            .list_database_names()
             .await
             .expect("Failed to fetch database names.");
 

@@ -187,7 +187,11 @@ pub struct Api {
 pub struct Pushd {
     pub production: bool,
     pub exchange: String,
+    pub mass_mention_chunk_size: usize,
+
+    // Queues
     pub message_queue: String,
+    pub mass_mention_queue: String,
     pub fr_accepted_queue: String,
     pub fr_received_queue: String,
     pub generic_queue: String,
@@ -212,6 +216,10 @@ impl Pushd {
 
     pub fn get_message_routing_key(&self) -> String {
         self.get_routing_key(self.message_queue.clone())
+    }
+
+    pub fn get_mass_mention_routing_key(&self) -> String {
+        self.get_routing_key(self.mass_mention_queue.clone())
     }
 
     pub fn get_fr_accepted_routing_key(&self) -> String {
@@ -314,6 +322,9 @@ impl Default for FeaturesAdvanced {
 pub struct Features {
     pub limits: FeaturesLimitsCollection,
     pub webhooks_enabled: bool,
+    pub mass_mentions_send_notifications: bool,
+    pub mass_mentions_enabled: bool,
+
     #[serde(default)]
     pub advanced: FeaturesAdvanced,
 }

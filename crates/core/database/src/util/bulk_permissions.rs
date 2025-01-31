@@ -94,9 +94,28 @@ impl<'z> BulkDatabasePermissionQuery<'z> {
         }
     }
 
+    pub async fn from_channel_id(self, channel_id: String) -> BulkDatabasePermissionQuery<'z> {
+        let channel = self
+            .database
+            .fetch_channel(channel_id.as_str())
+            .await
+            .expect("Valid channel id");
+
+        drop(channel_id);
+
+        BulkDatabasePermissionQuery {
+            channel: Some(channel),
+            ..self
+        }
+    }
+
     pub fn members(self, members: &'z [Member]) -> BulkDatabasePermissionQuery {
         BulkDatabasePermissionQuery {
             members: Some(members.to_owned()),
+            cached_member_perms: None,
+            users: None,
+            cached_members: None,
+            cached_users: None,
             ..self
         }
     }
@@ -104,6 +123,10 @@ impl<'z> BulkDatabasePermissionQuery<'z> {
     pub fn users(self, users: &'z [User]) -> BulkDatabasePermissionQuery {
         BulkDatabasePermissionQuery {
             users: Some(users.to_owned()),
+            cached_member_perms: None,
+            members: None,
+            cached_members: None,
+            cached_users: None,
             ..self
         }
     }

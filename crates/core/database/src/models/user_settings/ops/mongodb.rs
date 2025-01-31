@@ -53,8 +53,8 @@ impl AbstractUserSettings for MongoDb {
                 doc! {
                     "$set": set
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
+            .with_options(UpdateOptions::builder().upsert(true).build())
             .await
             .map(|_| ())
             .map_err(|_| create_database_error!("update_one", "user_settings"))
