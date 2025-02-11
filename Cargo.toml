@@ -11,10 +11,7 @@ members = [
 ]
 
 [patch.crates-io]
-redis22 = { package = "redis", version = "0.22.3", git = "https://github.com/revoltchat/redis-rs", rev = "1a41faf356fd21aebba71cea7eb7eb2653e5f0ef" }
-redis23 = { package = "redis", version = "0.23.1", git = "https://github.com/revoltchat/redis-rs", rev = "f8ca28ab85da59d2ccde526b4d2fb390eff5a5f9" }
-# authifier = { package = "authifier", version = "1.0.8", path = "../authifier/crates/authifier" }
-# rocket_authifier = { package = "rocket_authifier", version = "1.0.8", path = "../authifier/crates/rocket_authifier" }
+redis23 = { package = "redis", version = "0.23.3", git = "https://github.com/revoltchat/redis-rs", rev = "523b2937367e17bd0073722bf6e23d06042cb4e4" }
 
 # I'm 99% sure this is overloading the GitHub worker
 # hence builds have been failing since, let's just

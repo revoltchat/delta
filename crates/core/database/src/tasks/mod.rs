@@ -26,6 +26,7 @@ pub fn start_workers(db: Database, amqp: AMQP) {
 /// Task with additional information on when it should run
 pub struct DelayedTask<T> {
     pub data: T,
+    run_now: bool,
     last_updated: Instant,
     first_seen: Instant,
 }
@@ -41,6 +42,7 @@ impl<T> DelayedTask<T> {
     pub fn new(data: T) -> Self {
         DelayedTask {
             data,
+            run_now: false,
             last_updated: Instant::now(),
             first_seen: Instant::now(),
         }
@@ -51,9 +53,15 @@ impl<T> DelayedTask<T> {
         self.last_updated = Instant::now()
     }
 
+    /// Flag the task to run right away, regardless of the time
+    pub fn run_immediately(&mut self) {
+        self.run_now = true
+    }
+
     /// Check if a task should run yet
     pub fn should_run(&self) -> bool {
-        self.first_seen.elapsed().as_secs() > EXPIRE_CONSTANT
+        self.run_now
+            || self.first_seen.elapsed().as_secs() > EXPIRE_CONSTANT
             || self.last_updated.elapsed().as_secs() > SAVE_CONSTANT
     }
 }

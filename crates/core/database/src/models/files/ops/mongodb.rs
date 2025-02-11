@@ -110,7 +110,6 @@ impl AbstractAttachments for MongoDb {
                         "uploader_id": uploader_id
                     }
                 },
-                None,
             )
             .await
             .map_err(|_| create_database_error!("update_one", COL))?;
@@ -130,7 +129,6 @@ impl AbstractAttachments for MongoDb {
                         "reported": true
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -149,7 +147,6 @@ impl AbstractAttachments for MongoDb {
                         "deleted": true
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -170,7 +167,6 @@ impl AbstractAttachments for MongoDb {
                         "deleted": true
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -193,7 +189,6 @@ impl MongoDb {
                         "deleted": true
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())

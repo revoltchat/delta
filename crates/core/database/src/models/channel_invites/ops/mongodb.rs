@@ -24,12 +24,9 @@ impl AbstractChannelInvites for MongoDb {
     async fn fetch_invites_for_server(&self, server_id: &str) -> Result<Vec<Invite>> {
         Ok(self
             .col::<Invite>(COL)
-            .find(
-                doc! {
-                    "server": server_id,
-                },
-                None,
-            )
+            .find(doc! {
+                "server": server_id,
+            })
             .await
             .map_err(|_| create_database_error!("find", COL))?
             .filter_map(|s| async {

@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use amqprs::{
     channel::{
         BasicConsumeArguments, Channel, ExchangeDeclareArguments, QueueBindArguments,
@@ -14,7 +17,7 @@ mod consumers;
 use consumers::{
     inbound::{
         ack::AckConsumer, fr_accepted::FRAcceptedConsumer, fr_received::FRReceivedConsumer,
-        generic::GenericConsumer, message::MessageConsumer,
+        generic::GenericConsumer, mass_mention::MassMessageConsumer, message::MessageConsumer,
     },
     outbound::{apn::ApnsOutboundConsumer, fcm::FcmOutboundConsumer, vapid::VapidOutboundConsumer},
 };
@@ -22,6 +25,7 @@ use consumers::{
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
     let config = config().await;
+    pretty_env_logger::init();
 
     // Setup database
     let db = revolt_database::DatabaseInfo::Auto.connect().await.unwrap();
@@ -92,6 +96,17 @@ async fn main() {
             config.pushd.get_fr_accepted_routing_key().as_str(),
             None,
             FRAcceptedConsumer::new(db.clone(), authifier.clone()),
+        )
+        .await,
+    );
+
+    connections.push(
+        make_queue_and_consume(
+            &config,
+            &config.pushd.mass_mention_queue,
+            config.pushd.get_mass_mention_routing_key().as_str(),
+            None,
+            MassMessageConsumer::new(db.clone(), authifier.clone()),
         )
         .await,
     );
@@ -223,11 +238,10 @@ where
         .manual_ack(false)
         .finish();
 
-    channel.basic_consume(consumer, args).await.unwrap();
-    log::info!(
-        "Consuming routing key {} as queue {}",
-        routing_key,
-        queue_name
+    let routing_key = channel.basic_consume(consumer, args).await.unwrap();
+    info!(
+        "Consuming routing key {} as queue {}, tag {}",
+        routing_key, queue_name, routing_key
     );
     (channel, connection)
 }

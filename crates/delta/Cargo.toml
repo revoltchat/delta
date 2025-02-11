@@ -55,7 +55,7 @@ lettre = "0.10.0-alpha.4"
 rocket = { version = "0.5.1", default-features = false, features = ["json"] }
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", rev = "072d90359b23e9b291df6b672c07c93de9c46011" }
 rocket_empty = { version = "0.1.1", features = ["schema"] }
-rocket_authifier = { version = "1.0.9" }
+rocket_authifier = { version = "1.0.10" }
 rocket_prometheus = "0.10.0-rc.3"
 
 # spec generation
@@ -66,7 +66,7 @@ revolt_rocket_okapi = { version = "0.10.0", features = ["swagger"] }
 amqprs = { version = "1.7.0" }
 
 # core
-authifier = "1.0.9"
+authifier = "1.0.10"
 revolt-config = { path = "../core/config" }
 revolt-database = { path = "../core/database", features = [
     "rocket-impl",

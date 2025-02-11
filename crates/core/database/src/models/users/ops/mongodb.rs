@@ -49,12 +49,9 @@ impl AbstractUsers for MongoDb {
     /// Fetch a session from the database by token
     async fn fetch_session_by_token(&self, token: &str) -> Result<Session> {
         self.col::<Session>("sessions")
-            .find_one(
-                doc! {
-                    "token": token
-                },
-                None,
-            )
+            .find_one(doc! {
+                "token": token
+            })
             .await
             .map_err(|_| create_database_error!("find_one", "sessions"))?
             .ok_or_else(|| create_error!(InvalidSession))
@@ -64,14 +61,11 @@ impl AbstractUsers for MongoDb {
     async fn fetch_users<'a>(&self, ids: &'a [String]) -> Result<Vec<User>> {
         Ok(self
             .col::<User>(COL)
-            .find(
-                doc! {
-                    "_id": {
-                        "$in": ids
-                    }
-                },
-                None,
-            )
+            .find(doc! {
+                "_id": {
+                    "$in": ids
+                }
+            })
             .await
             .map_err(|_| create_database_error!("find", COL))?
             .filter_map(|s| async {
@@ -94,10 +88,10 @@ impl AbstractUsers for MongoDb {
 
         Ok(self
             .col::<UserDocument>(COL)
-            .find(
-                doc! {
-                    "username": username
-                },
+            .find(doc! {
+                "username": username
+            })
+            .with_options(
                 FindOptions::builder()
                     .collation(
                         Collation::builder()
@@ -122,15 +116,13 @@ impl AbstractUsers for MongoDb {
     async fn fetch_mutual_user_ids(&self, user_a: &str, user_b: &str) -> Result<Vec<String>> {
         Ok(self
             .col::<DocumentId>(COL)
-            .find(
-                doc! {
-                    "$and": [
-                        { "relations": { "$elemMatch": { "_id": &user_a, "status": "Friend" } } },
-                        { "relations": { "$elemMatch": { "_id": &user_b, "status": "Friend" } } }
-                    ]
-                },
-                FindOptions::builder().projection(doc! { "_id": 1 }).build(),
-            )
+            .find(doc! {
+                "$and": [
+                    { "relations": { "$elemMatch": { "_id": &user_a, "status": "Friend" } } },
+                    { "relations": { "$elemMatch": { "_id": &user_b, "status": "Friend" } } }
+                ]
+            })
+            .with_options(FindOptions::builder().projection(doc! { "_id": 1 }).build())
             .await
             .map_err(|_| create_database_error!("find", COL))?
             .filter_map(|s| async { s.ok() })
@@ -143,17 +135,15 @@ impl AbstractUsers for MongoDb {
     async fn fetch_mutual_channel_ids(&self, user_a: &str, user_b: &str) -> Result<Vec<String>> {
         Ok(self
             .col::<DocumentId>("channels")
-            .find(
-                doc! {
-                    "channel_type": {
-                        "$in": ["Group", "DirectMessage"]
-                    },
-                    "recipients": {
-                        "$all": [ user_a, user_b ]
-                    }
+            .find(doc! {
+                "channel_type": {
+                    "$in": ["Group", "DirectMessage"]
                 },
-                FindOptions::builder().projection(doc! { "_id": 1 }).build(),
-            )
+                "recipients": {
+                    "$all": [ user_a, user_b ]
+                }
+            })
+            .with_options(FindOptions::builder().projection(doc! { "_id": 1 }).build())
             .await
             .map_err(|_| create_database_error!("find", "channels"))?
             .filter_map(|s| async { s.ok() })
@@ -166,49 +156,46 @@ impl AbstractUsers for MongoDb {
     async fn fetch_mutual_server_ids(&self, user_a: &str, user_b: &str) -> Result<Vec<String>> {
         Ok(self
             .col::<DocumentId>("server_members")
-            .aggregate(
-                vec![
-                    doc! {
-                        "$match": {
-                            "_id.user": user_a
-                        }
-                    },
-                    doc! {
-                        "$lookup": {
-                            "from": "server_members",
-                            "as": "members",
-                            "let": {
-                                "server": "$_id.server"
-                            },
-                            "pipeline": [
-                                {
-                                    "$match": {
-                                        "$expr": {
-                                            "$and": [
-                                                { "$eq": [ "$_id.user", user_b ] },
-                                                { "$eq": [ "$_id.server", "$$server" ] }
-                                            ]
-                                        }
+            .aggregate(vec![
+                doc! {
+                    "$match": {
+                        "_id.user": user_a
+                    }
+                },
+                doc! {
+                    "$lookup": {
+                        "from": "server_members",
+                        "as": "members",
+                        "let": {
+                            "server": "$_id.server"
+                        },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            { "$eq": [ "$_id.user", user_b ] },
+                                            { "$eq": [ "$_id.server", "$$server" ] }
+                                        ]
                                     }
                                 }
-                            ]
-                        }
-                    },
-                    doc! {
-                        "$match": {
-                            "members": {
-                                "$size": 1_i32
                             }
+                        ]
+                    }
+                },
+                doc! {
+                    "$match": {
+                        "members": {
+                            "$size": 1_i32
                         }
-                    },
-                    doc! {
-                        "$project": {
-                            "_id": "$_id.server"
-                        }
-                    },
-                ],
-                None,
-            )
+                    }
+                },
+                doc! {
+                    "$project": {
+                        "_id": "$_id.server"
+                    }
+                },
+            ])
             .await
             .map_err(|_| create_database_error!("aggregate", "server_members"))?
             .filter_map(|s| async { s.ok() })
@@ -284,7 +271,6 @@ impl AbstractUsers for MongoDb {
                         }
                     }
                 }],
-                None,
             )
             .await
             .map(|_| ())
@@ -305,7 +291,6 @@ impl AbstractUsers for MongoDb {
                         }
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())
@@ -329,7 +314,6 @@ impl AbstractUsers for MongoDb {
                         "subscription": 1
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())

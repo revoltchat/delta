@@ -23,16 +23,13 @@ impl AbstractRatelimitEvents for MongoDb {
         count: usize,
     ) -> Result<bool> {
         self.col::<RatelimitEvent>(COL)
-            .count_documents(
-                doc! {
-                    "_id": {
-                        "$gte": Ulid::from_datetime(SystemTime::now() - period).to_string()
-                    },
-                    "target_id": target_id,
-                    "event_type": event_type.to_string()
+            .count_documents(doc! {
+                "_id": {
+                    "$gte": Ulid::from_datetime(SystemTime::now() - period).to_string()
                 },
-                None,
-            )
+                "target_id": target_id,
+                "event_type": event_type.to_string()
+            })
             .await
             .map(|c| c as usize >= count)
             .map_err(|_| create_database_error!("count_documents", COL))

@@ -60,7 +60,6 @@ impl AbstractEmojis for MongoDb {
                         }
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())

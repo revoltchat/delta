@@ -42,7 +42,6 @@ impl AbstractAttachmentHashes for MongoDb {
                         "iv": nonce
                     }
                 },
-                None,
             )
             .await
             .map(|_| ())

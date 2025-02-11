@@ -6,8 +6,9 @@ use revolt_config::{config, FeaturesLimits};
 use revolt_models::v0::{
     self, BulkMessageResponse, DataMessageSend, Embed, MessageAuthor, MessageFlags, MessageSort,
     MessageWebhook, PushNotification, ReplyIntent, SendableEmbed, Text, RE_MENTION,
+    RE_ROLE_MENTION,
 };
-use revolt_permissions::{ChannelPermission, PermissionValue};
+use revolt_permissions::{calculate_channel_permissions, ChannelPermission, PermissionValue};
 use revolt_result::Result;
 use ulid::Ulid;
 use validator::Validate;
@@ -15,7 +16,10 @@ use validator::Validate;
 use crate::{
     events::client::EventV1,
     tasks::{self, ack::AckEvent},
-    util::{bulk_permissions::BulkDatabasePermissionQuery, idempotency::IdempotencyKey},
+    util::{
+        bulk_permissions::BulkDatabasePermissionQuery, idempotency::IdempotencyKey,
+        permissions::DatabasePermissionQuery,
+    },
     Channel, Database, Emoji, File, User, AMQP,
 };
 
@@ -53,6 +57,8 @@ auto_derived_partial!(
         /// Array of user ids mentioned in this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mentions: Option<Vec<String>>,
+        /// Array of role ids mentioned in this message
+        pub role_mentions: Option<Vec<String>>,
         /// Array of message ids this message is replying to
         #[serde(skip_serializing_if = "Option::is_none")]
         pub replies: Option<Vec<String>>,
@@ -71,7 +77,7 @@ auto_derived_partial!(
 
         /// Bitfield of message flags
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub flags: Option<i32>,
+        pub flags: Option<u32>,
     },
     "PartialMessage"
 );
@@ -199,6 +205,30 @@ auto_derived!(
     }
 );
 
+pub struct MessageFlagsValue(pub u32);
+
+impl MessageFlagsValue {
+    pub fn has(&self, flag: MessageFlags) -> bool {
+        self.has_value(flag as u32)
+    }
+    pub fn has_value(&self, bit: u32) -> bool {
+        let mask = 1 << bit;
+        self.0 & mask == mask
+    }
+
+    pub fn set(&mut self, flag: MessageFlags, toggle: bool) -> &mut Self {
+        self.set_value(flag as u32, toggle)
+    }
+    pub fn set_value(&mut self, bit: u32, toggle: bool) -> &mut Self {
+        if toggle {
+            self.0 |= 1 << bit;
+        } else {
+            self.0 &= !(1 << bit);
+        }
+        self
+    }
+}
+
 #[allow(clippy::derivable_impls)]
 impl Default for Message {
     fn default() -> Self {
@@ -214,6 +244,7 @@ impl Default for Message {
             edited: None,
             embeds: None,
             mentions: None,
+            role_mentions: None,
             replies: None,
             reactions: Default::default(),
             interactions: Default::default(),
@@ -262,12 +293,40 @@ impl Message {
             return Err(create_error!(EmptyMessage));
         }
 
-        // Ensure flags are either not set or have permissible values
-        if let Some(flags) = &data.flags {
-            if flags != &0 && flags != &1 {
+        let mut mentions_everyone = false;
+        let mut mentions_online = false;
+        let mut suppress_notifications = false;
+
+        if let Some(raw_flags) = &data.flags {
+            if raw_flags > &7 {
+                // quick path to failure: bigger than all the bits combined
                 return Err(create_error!(InvalidProperty));
             }
+
+            // First step of mass mention resolution
+            let flags = MessageFlagsValue(*raw_flags);
+            suppress_notifications = flags.has(MessageFlags::SuppressNotifications);
+            mentions_everyone = flags.has(MessageFlags::MentionsEveryone);
+            mentions_online = flags.has(MessageFlags::MentionsOnline);
+
+            // Not a bot, and attempting to set mention flags
+            if user.as_ref().is_some_and(|u| u.bot.as_ref().is_none())
+                && (mentions_everyone || mentions_online)
+            {
+                return Err(create_error!(IsNotBot));
+            }
+
+            if mentions_everyone && mentions_online {
+                return Err(create_error!(InvalidFlagValue));
+            }
         }
+
+        let server_id = match channel {
+            Channel::TextChannel { ref server, .. } | Channel::VoiceChannel { ref server, .. } => {
+                Some(server.clone())
+            }
+            _ => None,
+        };
 
         // Ensure restrict_reactions is not specified without reactions list
         if let Some(interactions) = &data.interactions {
@@ -302,18 +361,96 @@ impl Message {
                 .unwrap_or_default(),
             author: author_id,
             webhook: webhook.map(|w| w.into()),
-            flags: data.flags.map(|v| v as i32),
+            flags: data.flags,
             ..Default::default()
         };
 
         // Parse mentions in message.
         let mut mentions = HashSet::new();
-        if allow_mentions {
+        let mut role_mentions = HashSet::new();
+        let mut role_model_mentions = vec![];
+
+        if allow_mentions && server_id.is_some() {
             if let Some(content) = &data.content {
                 for capture in RE_MENTION.captures_iter(content) {
                     if let Some(mention) = capture.get(1) {
                         mentions.insert(mention.as_str().to_string());
                     }
+                }
+
+                // Second step of mass mention resolution.
+                for capture in RE_ROLE_MENTION.captures_iter(content) {
+                    let raw = capture.get(0).expect("No capture?").as_str();
+                    if raw == "@everyone" {
+                        mentions_everyone = true;
+                        // Can't break early here since we want to capture any role ids
+                    } else if raw == "@online" {
+                        mentions_online = true;
+                    } else if let Some(role_match) = capture.get(1) {
+                        role_mentions.insert(role_match.as_str().to_string());
+                    }
+                }
+
+                if !role_mentions.is_empty() {
+                    let server_data = db
+                        .fetch_server(server_id.unwrap().as_str())
+                        .await
+                        .expect("Failed to fetch server");
+
+                    role_mentions = role_mentions
+                        .iter()
+                        .filter(|role_id| server_data.roles.contains_key(*role_id))
+                        .cloned()
+                        .collect();
+
+                    role_model_mentions.extend(
+                        role_mentions
+                            .iter()
+                            .map(|role_id| server_data.roles.get(role_id).to_owned()),
+                    );
+                }
+            }
+        }
+
+        // Validate the user can perform a mass mention
+        if !config.features.mass_mentions_enabled
+            && (mentions_everyone || mentions_online || !role_mentions.is_empty())
+        {
+            return Err(create_error!(FeatureDisabled {
+                feature: "features.mass_mentions_enabled".to_string()
+            }));
+        } else if mentions_everyone || mentions_online || !role_mentions.is_empty() {
+            debug!(
+                "Mentioned everyone: {}, mentioned online: {}, mentioned roles: {:?}",
+                mentions_everyone, mentions_online, &role_mentions
+            );
+            if let Some(user) = match author {
+                MessageAuthor::User(user) => Some(Ok(user)),
+                MessageAuthor::System { .. } => Some(Err(())), // DISALLOWED
+                MessageAuthor::Webhook(..) => None,            // Bypass check
+            } {
+                if user.is_err() {
+                    return Err(create_error!(InvalidProperty));
+                }
+                let owned_user: User = user.unwrap().to_owned().into();
+
+                let mut query = DatabasePermissionQuery::new(db, &owned_user).channel(&channel);
+                let perms = calculate_channel_permissions(&mut query).await;
+
+                if (mentions_everyone || mentions_online)
+                    && !perms.has_channel_permission(ChannelPermission::MentionEveryone)
+                {
+                    return Err(create_error!(MissingPermission {
+                        permission: ChannelPermission::MentionEveryone.to_string()
+                    }));
+                }
+
+                if !role_mentions.is_empty()
+                    && !perms.has_channel_permission(ChannelPermission::MentionRoles)
+                {
+                    return Err(create_error!(MissingPermission {
+                        permission: ChannelPermission::MentionRoles.to_string()
+                    }));
                 }
             }
         }
@@ -346,6 +483,7 @@ impl Message {
                     let recipients_hash: HashSet<&String, RandomState> =
                         HashSet::from_iter(recipients);
                     mentions.retain(|m| recipients_hash.contains(m));
+                    role_mentions.clear();
                 }
                 Channel::TextChannel { ref server, .. }
                 | Channel::VoiceChannel { ref server, .. } => {
@@ -386,11 +524,26 @@ impl Message {
             message.mentions.replace(mentions.into_iter().collect());
         }
 
+        if !role_mentions.is_empty() {
+            message
+                .role_mentions
+                .replace(role_mentions.into_iter().collect());
+        }
+
         if !replies.is_empty() {
             message
                 .replies
                 .replace(replies.into_iter().collect::<Vec<String>>());
         }
+
+        // Calculate final message flags
+        let mut flag_value = MessageFlagsValue(0);
+        flag_value
+            .set(MessageFlags::SuppressNotifications, suppress_notifications)
+            .set(MessageFlags::MentionsEveryone, mentions_everyone)
+            .set(MessageFlags::MentionsOnline, mentions_online);
+
+        message.flags = Some(flag_value.0);
 
         // Add attachments to message.
         let mut attachments = vec![];
@@ -470,7 +623,12 @@ impl Message {
                 tasks::ack::queue_message(
                     self.channel.to_string(),
                     AckEvent::ProcessMessage {
-                        messages: vec![(None, self.clone(), mentions.clone(), true)],
+                        messages: vec![(
+                            None,
+                            self.clone(),
+                            mentions.clone(),
+                            self.has_suppressed_notifications(),
+                        )],
                     },
                 )
                 .await;
@@ -502,6 +660,7 @@ impl Message {
         user: Option<v0::User>,
         member: Option<v0::Member>,
         channel: &Channel,
+
         generate_embeds: bool,
     ) -> Result<()> {
         self.send_without_notifications(
@@ -514,7 +673,9 @@ impl Message {
         )
         .await?;
 
-        if !self.has_suppressed_notifications() {
+        if !self.has_suppressed_notifications()
+            && (self.mentions.is_some() || self.contains_mass_push_mention())
+        {
             // send Push notifications
             tasks::ack::queue_message(
                 self.channel.to_string(),
@@ -537,7 +698,7 @@ impl Message {
                             }
                             _ => vec![],
                         },
-                        self.has_suppressed_notifications(),
+                        false, // branch already dictates this
                     )],
                 },
             )
@@ -574,11 +735,22 @@ impl Message {
     /// Whether this message has suppressed notifications
     pub fn has_suppressed_notifications(&self) -> bool {
         if let Some(flags) = self.flags {
-            flags & MessageFlags::SuppressNotifications as i32
-                == MessageFlags::SuppressNotifications as i32
+            flags & MessageFlags::SuppressNotifications as u32
+                == MessageFlags::SuppressNotifications as u32
         } else {
             false
         }
+    }
+
+    pub fn contains_mass_push_mention(&self) -> bool {
+        let ping = if let Some(flags) = self.flags {
+            let flags = MessageFlagsValue(flags);
+            flags.has(MessageFlags::MentionsEveryone)
+        } else {
+            false
+        };
+
+        ping || self.role_mentions.is_some()
     }
 
     /// Update message data

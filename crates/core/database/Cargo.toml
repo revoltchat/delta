@@ -64,7 +64,7 @@ redis-kiss = { version = "0.1.4" }
 
 # Database
 bson = { optional = true, version = "2.1.0" }
-mongodb = { optional = true, version = "2.1.0", default-features = false }
+mongodb = { optional = true, version = "3.1.0" }
 
 # Database Migration
 unicode-segmentation = "1.10.1"
@@ -96,7 +96,7 @@ web-push = "0.10.0"
 revolt_a2 = { version = "0.10", default-features = false, features = ["ring"] }
 
 # Authifier
-authifier = { version = "1.0.9", features = ["rocket_impl"] }
+authifier = { version = "1.0.10", features = ["rocket_impl"] }
 
 # RabbitMQ
 amqprs = { version = "1.7.0" }

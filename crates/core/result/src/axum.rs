@@ -1,5 +1,4 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
-use rocket::http::Status;
 
 use crate::{Error, ErrorType};
 
@@ -52,6 +51,7 @@ impl IntoResponse for Error {
 
             ErrorType::ReachedMaximumBots => StatusCode::BAD_REQUEST,
             ErrorType::IsBot => StatusCode::BAD_REQUEST,
+            ErrorType::IsNotBot => StatusCode::BAD_REQUEST,
             ErrorType::BotIsPrivate => StatusCode::FORBIDDEN,
 
             ErrorType::CannotReportYourself => StatusCode::BAD_REQUEST,
@@ -75,6 +75,8 @@ impl IntoResponse for Error {
             ErrorType::NotFound => StatusCode::NOT_FOUND,
             ErrorType::NoEffect => StatusCode::OK,
             ErrorType::FailedValidation { .. } => StatusCode::BAD_REQUEST,
+            ErrorType::InvalidFlagValue => StatusCode::BAD_REQUEST,
+            ErrorType::FeatureDisabled { .. } => StatusCode::BAD_REQUEST,
 
             ErrorType::ProxyError => StatusCode::BAD_REQUEST,
             ErrorType::FileTooSmall => StatusCode::UNPROCESSABLE_ENTITY,

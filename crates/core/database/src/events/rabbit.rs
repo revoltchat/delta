@@ -11,6 +11,12 @@ pub struct MessageSentPayload {
     pub users: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MassMessageSentPayload {
+    pub notifications: Vec<PushNotification>,
+    pub server_id: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FRAcceptedPayload {
     pub accepted_user: User,

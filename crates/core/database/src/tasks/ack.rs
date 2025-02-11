@@ -14,6 +14,7 @@ use validator::HasLen;
 use revolt_result::Result;
 
 use super::DelayedTask;
+use crate::Channel::{TextChannel, VoiceChannel};
 
 /// Enumeration of possible events
 #[derive(Debug, Eq, PartialEq)]
@@ -120,17 +121,22 @@ pub async fn handle_ack_event(
             );
 
             // find all the users we'll be notifying
-            messages
-                .iter()
-                .for_each(|(_, _, recipents, _)| users.extend(recipents.iter()));
+            messages.iter().for_each(|(_, _, recipents, _)| {
+                users.extend(recipents.iter());
+            });
 
             debug!("Found {} users to notify.", users.len());
 
             for user in users {
                 let message_ids: Vec<String> = messages
                     .iter()
-                    .filter(|(_, _, recipients, _)| recipients.contains(user))
-                    .map(|(_, message, _, _)| message.id.clone())
+                    .filter_map(|(_, message, recipients, _)| {
+                        if recipients.contains(user) {
+                            Some(message.id.clone())
+                        } else {
+                            None
+                        }
+                    })
                     .collect();
 
                 if !message_ids.is_empty() {
@@ -140,13 +146,18 @@ pub async fn handle_ack_event(
                 debug!("Added {} mentions for user {}", message_ids.len(), &user);
             }
 
-            for (push, _, recipients, silenced) in messages {
-                if *silenced || recipients.is_empty() || push.is_none() {
+            let mut mass_mentions = vec![];
+
+            for (push, message, recipients, silenced) in messages {
+                if *silenced
+                    || push.is_none()
+                    || (recipients.is_empty() && !message.contains_mass_push_mention())
+                {
                     debug!(
                         "Rejecting push: silenced: {}, recipient count: {}, push exists: {:?}",
                         *silenced,
                         recipients.length(),
-                        push
+                        push.is_some()
                     );
                     continue;
                 }
@@ -161,6 +172,35 @@ pub async fn handle_ack_event(
                     .await
                 {
                     revolt_config::capture_error(&err);
+                }
+
+                if message.contains_mass_push_mention() {
+                    mass_mentions.push(push.clone().unwrap());
+                }
+            }
+
+            if !mass_mentions.is_empty() {
+                debug!(
+                    "Sending mass mention push event to AMQP; channel {}",
+                    &mass_mentions[0].message.channel
+                );
+
+                let channel = db
+                    .fetch_channel(&mass_mentions[0].message.channel)
+                    .await
+                    .expect("Failed to fetch channel from db");
+
+                match channel {
+                    TextChannel { server, .. } | VoiceChannel { server, .. } => {
+                        if let Err(err) =
+                            amqp.mass_mention_message_sent(server, mass_mentions).await
+                        {
+                            revolt_config::capture_error(&err);
+                        }
+                    }
+                    _ => {
+                        panic!("Unknown channel type when sending mass mention event");
+                    }
                 }
             }
         }
@@ -192,7 +232,7 @@ pub async fn worker(db: Database, amqp: AMQP) {
                     revolt_config::capture_error(&err);
                     error!("{err:?} for {event:?}. ({user:?}, {channel})");
                 } else {
-                    info!("User {user:?} ack in {channel} with {event:?}");
+                    debug!("User {user:?} ack in {channel} with {event:?}");
                 }
             }
         }
@@ -223,6 +263,12 @@ pub async fn worker(db: Database, amqp: AMQP) {
                         {
                             // add the new message to the list of messages to be processed.
                             existing.append(new_data);
+
+                            // if the message contains a mass mention, do not delay it any further.
+                            if new_data[0].1.contains_mass_push_mention() {
+                                task.run_immediately();
+                                continue;
+                            }
 
                             // put a cap on the amount of messages that can be queued, for particularly active channels
                             if (existing.length() as u16)

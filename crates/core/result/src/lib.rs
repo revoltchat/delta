@@ -121,6 +121,7 @@ pub enum ErrorType {
     // ? Bot related errors
     ReachedMaximumBots,
     IsBot,
+    IsNotBot,
     BotIsPrivate,
 
     // ? User safety related errors
@@ -148,6 +149,7 @@ pub enum ErrorType {
     InvalidCredentials,
     InvalidProperty,
     InvalidSession,
+    InvalidFlagValue,
     NotAuthenticated,
     DuplicateNonce,
     NotFound,
@@ -168,6 +170,11 @@ pub enum ErrorType {
 
     // ? Legacy errors
     VosoUnavailable,
+
+    // ? Feature flag disabled in the config
+    FeatureDisabled {
+        feature: String,
+    },
 }
 
 #[macro_export]

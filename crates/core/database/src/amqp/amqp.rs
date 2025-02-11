@@ -170,6 +170,38 @@ impl AMQP {
             .await
     }
 
+    pub async fn mass_mention_message_sent(
+        &self,
+        server_id: String,
+        payload: Vec<PushNotification>,
+    ) -> Result<(), AMQPError> {
+        let config = revolt_config::config().await;
+
+        let payload = MassMessageSentPayload {
+            notifications: payload,
+            server_id,
+        };
+        let payload = to_string(&payload).unwrap();
+
+        let routing_key = config.pushd.get_mass_mention_routing_key();
+
+        debug!(
+            "Sending mass mention payload on channel {}: {}",
+            routing_key, payload
+        );
+
+        self.channel
+            .basic_publish(
+                BasicProperties::default()
+                    .with_content_type("application/json")
+                    .with_persistence(true)
+                    .finish(),
+                payload.into(),
+                BasicPublishArguments::new(&config.pushd.exchange, routing_key.as_str()),
+            )
+            .await
+    }
+
     pub async fn ack_message(
         &self,
         user_id: String,

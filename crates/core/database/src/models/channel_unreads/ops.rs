@@ -26,6 +26,14 @@ pub trait AbstractChannelUnreads: Sync + Send {
         message_ids: &[String],
     ) -> Result<()>;
 
+    /// Add a mention.
+    async fn add_mention_to_many_unreads<'a>(
+        &self,
+        channel_id: &str,
+        user_ids: &[String],
+        message_ids: &[String],
+    ) -> Result<()>;
+
     /// Fetch all unreads with mentions for a user.
     async fn fetch_unread_mentions(&self, user_id: &str) -> Result<Vec<ChannelUnread>>;
 
