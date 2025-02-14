@@ -2,7 +2,7 @@ use revolt_database::{
     util::{permissions::DatabasePermissionQuery, reference::Reference},
     Database, RemovalIntention, User,
 };
-use revolt_permissions::{calculate_server_permissions, ChannelPermission};
+use revolt_permissions::{calculate_server_permissions, ChannelPermission, PermissionQuery};
 use revolt_result::{create_error, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -29,6 +29,11 @@ pub async fn kick(
     }
 
     let mut query = DatabasePermissionQuery::new(db, &user).server(&server);
+
+    if query.are_we_server_owner().await {
+        return Err(create_error!(CannotRemoveServerOwner));
+    }
+
     calculate_server_permissions(&mut query)
         .await
         .throw_if_lacking_channel_permission(ChannelPermission::KickMembers)?;

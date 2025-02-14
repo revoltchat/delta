@@ -94,6 +94,7 @@ pub enum ErrorType {
     EmptyMessage,
     PayloadTooLarge,
     CannotRemoveYourself,
+    CannotRemoveServerOwner,
     GroupTooLarge {
         max: usize,
     },

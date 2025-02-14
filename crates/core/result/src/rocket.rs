@@ -37,6 +37,7 @@ impl<'r> Responder<'r, 'static> for Error {
             ErrorType::EmptyMessage => Status::UnprocessableEntity,
             ErrorType::PayloadTooLarge => Status::UnprocessableEntity,
             ErrorType::CannotRemoveYourself => Status::BadRequest,
+            ErrorType::CannotRemoveServerOwner => Status::BadRequest,
             ErrorType::GroupTooLarge { .. } => Status::Forbidden,
             ErrorType::AlreadyInGroup => Status::Conflict,
             ErrorType::NotInGroup => Status::NotFound,

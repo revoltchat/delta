@@ -32,6 +32,7 @@ impl IntoResponse for Error {
             ErrorType::EmptyMessage => StatusCode::UNPROCESSABLE_ENTITY,
             ErrorType::PayloadTooLarge => StatusCode::UNPROCESSABLE_ENTITY,
             ErrorType::CannotRemoveYourself => StatusCode::BAD_REQUEST,
+            ErrorType::CannotRemoveServerOwner => StatusCode::BAD_REQUEST,
             ErrorType::GroupTooLarge { .. } => StatusCode::FORBIDDEN,
             ErrorType::AlreadyInGroup => StatusCode::CONFLICT,
             ErrorType::NotInGroup => StatusCode::NOT_FOUND,
